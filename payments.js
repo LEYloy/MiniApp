@@ -10,12 +10,12 @@ const crypto = require("crypto");
 // (createInvoice выбросит понятную ошибку, бот при этом не упадёт).
 // ============================================================
 const CRYPTOBOT_API_TOKEN = "620306:AA7zrmfoHeYuxJ0DAWFvADUArYu1qhIFjJY"; // ⚠️ вставь токен из @CryptoBot
-const XROCKET_API_TOKEN = "cac647d9e4958120524d6dbfd";   // ⚠️ вставь токен из @xRocket
-const ROLLYPAY_API_KEY = "ZGmnw33968nxBZbEb5jzEV_UH093tJzzo5n4ZhthAdA";    // API-ключ (заголовок X-API-Key) — Личный кабинет (panel.rollypay.io) → Интеграция → «API-КЛЮЧ»
+const XROCKET_API_TOKEN = "621bf8212f69ff9ed3f98a3f4";   // ⚠️ вставь токен из @xRocket
+const ROLLYPAY_API_KEY = "vcf5LatKsPJMyc57iKiC3M3Dt68lEcOnO-e4_RQ8ECg";    // API-ключ (заголовок X-API-Key) — Личный кабинет (panel.rollypay.io) → Интеграция → «API-КЛЮЧ»
 const ROLLYPAY_TERMINAL_ID = "355e3c8e-ad33-4eed-96f5-092d072c0d11"; // ID кассы "DeadOfMessageBot" — Личный кабинет → Интеграция → «TERMINAL ID»
 // Секрет подписи вебхуков (заголовок X-Signature) — Личный кабинет → Интеграция → «СЕКРЕТ ПОДПИСИ ВЕБХУКОВ».
 // Нужен только для автопроверки платежей через Callback URL, см. webhook.js.
-const ROLLYPAY_SIGNING_SECRET = "yNO7C-mVDC49S9X8nXBopeEKznD5yZX9SFw_0sqdQEo";
+const ROLLYPAY_SIGNING_SECRET = "GqW_Gw2mBguG5cvDXwVWlSgYpYkOqcjqv8pLWeG-Lzo";
 
 const CRYPTOBOT_API_BASE = "https://pay.crypt.bot/api/";
 // Официальная документация (docs.rollypay.io/api/overview) прямым текстом
