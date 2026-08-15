@@ -1,19 +1,15 @@
 {
-  "name": "telegram-bot",
+  "name": "premium-miniapp",
   "version": "1.0.0",
   "private": true,
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start:bot": "node eto.js",
-    "start:miniapp": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "grammy": "^1.30.0",
-    "@grammyjs/menu": "^1.2.2",
-    "xrocket-pay-api-sdk": "^1.0.7",
-    "sqlite3": "^5.1.7",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "xrocket-pay-api-sdk": "^1.0.7"
   }
 }
