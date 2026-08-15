@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Premium</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    :root {
+        --bg: #05070d;
+        --bg-card: #0d1220;
+        --bg-card-2: #121a2e;
+        --border: #1c2540;
+        --text: #e8ecf7;
+        --text-dim: #8590ac;
+        --primary: #2f6bff;
+        --primary-hover: #4d7dff;
+        --success: #1fae5c;
+        --danger: #e0433f;
+        --gold: #f4c542;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: radial-gradient(circle at 50% 0%, #0b1224 0%, #05070d 60%, #010103 100%);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        min-height: 100vh;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; }
+    .header { text-align: center; margin-bottom: 22px; }
+    .header .crown { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+    .header h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+        background: linear-gradient(90deg, var(--gold), #ffe08a);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 700;
+    }
+    .header p { color: var(--text-dim); font-size: 14px; margin: 0; line-height: 1.4; }
+
+    .section-title { font-size: 13px; color: var(--text-dim); margin: 22px 0 10px; text-transform: uppercase; letter-spacing: .04em; }
+
+    .tariffs { display: flex; flex-direction: column; gap: 10px; }
+    .tariff {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: border-color .15s, background .15s;
+    }
+    .tariff:active { transform: scale(0.99); }
+    .tariff.selected { border-color: var(--primary); background: var(--bg-card-2); }
+    .tariff .label { font-weight: 600; font-size: 15px; }
+    .tariff .price { color: var(--gold); font-weight: 700; font-size: 15px; }
+
+    .methods { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+    .method-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .method-btn .price { color: var(--text-dim); font-weight: 500; font-size: 13px; }
+    .method-btn:active { transform: scale(0.99); }
+
+    .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        border: none;
+        border-radius: 14px;
+        padding: 15px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 14px;
+        color: #fff;
+    }
+    .btn-primary { background: var(--primary); }
+    .btn-primary:active { background: var(--primary-hover); }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+
+    .pay-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; margin-top: 10px; }
+    .pay-box .amount { font-size: 26px; font-weight: 800; color: var(--gold); margin-bottom: 4px; }
+    .pay-box .desc { color: var(--text-dim); font-size: 13px; margin-bottom: 4px; }
+
+    .status { text-align: center; font-size: 13px; color: var(--text-dim); margin-top: 10px; min-height: 18px; }
+
+    .success-screen { text-align: center; padding: 60px 10px; }
+    .success-screen .icon { font-size: 56px; margin-bottom: 14px; }
+    .success-screen h2 { font-size: 20px; margin: 0 0 8px; color: var(--success); }
+    .success-screen p { color: var(--text-dim); font-size: 14px; }
+
+    .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header">
+        <div class="crown">👑</div>
+        <h1>Premium — Скрыть себя</h1>
+        <p>Владельцы бизнес-ботов не увидят твоё имя, юзернейм и содержимое сообщений — вместо этого им придёт уведомление, что у собеседника подключен Premium.</p>
+    </div>
+
+    <div id="screen-tariffs">
+        <div class="section-title">Выбери срок</div>
+        <div class="tariffs" id="tariffList"></div>
+    </div>
+
+    <div id="screen-methods" class="hidden">
+        <div class="section-title">Способ оплаты</div>
+        <div class="methods" id="methodList"></div>
+        <button class="btn btn-danger" id="backToTariffs">Назад</button>
+    </div>
+
+    <div id="screen-pay" class="hidden">
+        <div class="pay-box">
+            <div class="amount" id="payAmount"></div>
+            <div class="desc" id="payDesc"></div>
+            <button class="btn btn-primary" id="payBtn">Оплатить</button>
+            <button class="btn btn-success hidden" id="checkBtn">Проверить оплату</button>
+            <div class="status" id="payStatus"></div>
+        </div>
+        <button class="btn btn-danger" id="backToMethods">Назад</button>
+    </div>
+
+    <div id="screen-success" class="success-screen hidden">
+        <div class="icon">✅</div>
+        <h2>Успешно! Ваша подписка активна!</h2>
+        <p>Можешь закрыть это окно — бот тоже пришлёт подтверждение в чат.</p>
+    </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const initData = tg?.initData || "";
+
+const METHOD_LABELS = {
+    stars: { name: "Telegram Stars", icon: "⭐", priceKey: "priceStars", suffix: "" },
+    cryptobot: { name: "CryptoBot", icon: "💎", priceKey: "priceUsdt", suffix: " USDT" },
+    xrocket: { name: "xRocket", icon: "🚀", priceKey: "priceTon", suffix: " TON" },
+    rollypay: { name: "СБП", icon: "🏦", priceKey: "priceRub", suffix: " ₽" }
+};
+
+let tariffs = [];
+let selectedTariff = null;
+let currentPay = null; // { method, checkId }
+
+const screens = {
+    tariffs: document.getElementById("screen-tariffs"),
+    methods: document.getElementById("screen-methods"),
+    pay: document.getElementById("screen-pay"),
+    success: document.getElementById("screen-success")
+};
+function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.add("hidden"));
+    screens[name].classList.remove("hidden");
+}
+
+async function loadTariffs() {
+    const res = await fetch("/api/tariffs");
+    const data = await res.json();
+    tariffs = data.tariffs || [];
+    const list = document.getElementById("tariffList");
+    list.innerHTML = "";
+    tariffs.forEach(t => {
+        const el = document.createElement("div");
+        el.className = "tariff";
+        el.innerHTML = `<span class="label">${t.label}</span><span class="price">от ${t.priceRub} ₽</span>`;
+        el.addEventListener("click", () => selectTariff(t));
+        list.appendChild(el);
+    });
+}
+
+function selectTariff(t) {
+    selectedTariff = t;
+    renderMethods();
+    showScreen("methods");
+}
+
+function renderMethods() {
+    const list = document.getElementById("methodList");
+    list.innerHTML = "";
+    Object.entries(METHOD_LABELS).forEach(([key, m]) => {
+        const price = selectedTariff[m.priceKey];
+        const el = document.createElement("div");
+        el.className = "method-btn";
+        el.innerHTML = `<span>${m.icon} ${m.name}</span><span class="price">${price}${m.suffix}</span>`;
+        el.addEventListener("click", () => startPay(key));
+        list.appendChild(el);
+    });
+}
+
+document.getElementById("backToTariffs").addEventListener("click", () => showScreen("tariffs"));
+document.getElementById("backToMethods").addEventListener("click", () => showScreen("methods"));
+
+async function startPay(method) {
+    const m = METHOD_LABELS[method];
+    document.getElementById("payAmount").textContent = `${selectedTariff[m.priceKey]}${m.suffix}`;
+    document.getElementById("payDesc").textContent = `${m.name} · ${selectedTariff.label}`;
+    document.getElementById("payStatus").textContent = "";
+    document.getElementById("checkBtn").classList.add("hidden");
+    showScreen("pay");
+
+    document.getElementById("payStatus").textContent = "Создаём счёт...";
+    try {
+        const res = await fetch("/api/pay", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ method, tariffId: selectedTariff.id, initData })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || data.error || "Ошибка");
+
+        document.getElementById("payStatus").textContent = "";
+        currentPay = { method, checkId: data.checkId };
+
+        const payBtn = document.getElementById("payBtn");
+        payBtn.onclick = () => {
+            if (method === "stars" && tg?.openInvoice) {
+                tg.openInvoice(data.url, (status) => {
+                    if (status === "paid") showSuccess();
+                    else if (status === "failed") document.getElementById("payStatus").textContent = "Оплата не прошла.";
+                });
+            } else if (tg?.openLink) {
+                tg.openLink(data.url);
+            } else {
+                window.open(data.url, "_blank");
+            }
+        };
+
+        if (method !== "stars") {
+            document.getElementById("checkBtn").classList.remove("hidden");
+        }
+    } catch (err) {
+        document.getElementById("payStatus").textContent = "⚠️ " + err.message;
+    }
+}
+
+document.getElementById("checkBtn").addEventListener("click", async () => {
+    if (!currentPay) return;
+    document.getElementById("payStatus").textContent = "Проверяем...";
+    try {
+        const res = await fetch("/api/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ method: currentPay.method, checkId: currentPay.checkId, tariffId: selectedTariff.id, initData })
+        });
+        const data = await res.json();
+        if (data.paid) {
+            showSuccess();
+        } else {
+            document.getElementById("payStatus").textContent = "⏳ Оплата ещё не поступила. Попробуй ещё раз через пару секунд.";
+        }
+    } catch (err) {
+        document.getElementById("payStatus").textContent = "⚠️ Не удалось проверить оплату.";
+    }
+});
+
+function showSuccess() {
+    showScreen("success");
+    tg?.HapticFeedback?.notificationOccurred?.("success");
+}
+
+loadTariffs();
+</script>
+</body>
+</html>
