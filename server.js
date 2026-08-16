@@ -3,13 +3,43 @@ const crypto = require("crypto");
 
 const { BOT_TOKEN, YOUR_TELEGRAM_ID } = require("./config");
 const { HIDE_TARIFFS, getHideTariff } = require("./tariffs");
-const { grantHide } = require("./subscriptions");
+const {
+    grantHide, isHidden, getHideExpiry, hasUsedTrial, grantTrial, TRIAL_DURATION_DAYS
+} = require("./subscriptions");
 const {
     createCryptoBotInvoice, checkCryptoBotInvoice,
     createXRocketInvoice, checkXRocketInvoice,
     createRollyPayment, checkRollyPayment,
     ROLLYPAY_SIGNING_SECRET
 } = require("./payments");
+
+// Домен этого деплоя — нужен, чтобы кнопки в уведомлениях бота вели сюда же.
+// Обнови, если домен на Railway поменяется.
+const MINIAPP_URL = "https://miniapp-production-6293.up.railway.app";
+
+// premium-эмодзи для уведомлений об оплате — ЗАМЕНИ на свой emoji-id.
+const EMOJI_SUCCESS_ID = "5416074955643203200";
+function tgEmoji(id, fallback) {
+    return `<tg-emoji emoji-id="${id}">${fallback}</tg-emoji>`;
+}
+function daysWord(n) {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return "день";
+    if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "дня";
+    return "дней";
+}
+// Единый текст + кнопки для любого уведомления об активации Premium
+// (оплата любым способом ИЛИ выдача админом) — используется и здесь, и в eto.js.
+function buildPremiumNotification(days) {
+    const text = `${tgEmoji(EMOJI_SUCCESS_ID, "✅")}<b>Оплата успешно получена!</b>\nВаш Premium ${days} ${daysWord(days)} активен!`;
+    const reply_markup = {
+        inline_keyboard: [
+            [{ text: "🔧 Управлять", web_app: { url: `${MINIAPP_URL}/?screen=profile` } }],
+            [{ text: "📱 Mini App", web_app: { url: MINIAPP_URL } }]
+        ]
+    };
+    return { text, reply_markup };
+}
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -68,12 +98,12 @@ function validateInitData(initData) {
     }
 }
 
-async function sendTelegramMessage(chatId, text) {
+async function sendTelegramMessage(chatId, text, reply_markup) {
     try {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" })
+            body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", reply_markup })
         });
     } catch (e) {
         console.error("💥 Mini App: не удалось отправить сообщение в чат:", e.message || e);
@@ -86,6 +116,39 @@ app.use(express.static(__dirname));
 // --- Тарифы (чтобы фронтенд не хардкодил цены дважды) ---
 app.get("/api/tariffs", (req, res) => {
     res.json({ tariffs: HIDE_TARIFFS });
+});
+
+// --- Профиль: имя/юзернейм из Telegram + статус подписки + доступен ли триал ---
+app.post("/api/status", (req, res) => {
+    const { initData } = req.body || {};
+    const user = validateInitData(initData);
+    if (!user) return res.status(401).json({ error: "invalid_init_data" });
+
+    const active = isHidden(user.id);
+    res.json({
+        user: {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name || null,
+            username: user.username || null
+        },
+        premium: { active, until: getHideExpiry(user.id) },
+        trialAvailable: !hasUsedTrial(user.id) && !active
+    });
+});
+
+// --- Бесплатный триал (один раз на пользователя) ---
+app.post("/api/trial", async (req, res) => {
+    const { initData } = req.body || {};
+    const user = validateInitData(initData);
+    if (!user) return res.status(401).json({ error: "invalid_init_data" });
+
+    const result = grantTrial(user.id);
+    if (!result.ok) return res.status(400).json({ error: result.reason });
+
+    const notif = buildPremiumNotification(TRIAL_DURATION_DAYS);
+    await sendTelegramMessage(user.id, notif.text, notif.reply_markup);
+    res.json({ ok: true, until: result.until });
 });
 
 // --- Создать оплату ---
@@ -240,4 +303,4 @@ app.post("/rollypay/webhook", express.raw({ type: "*/*" }), async (req, res) => 
 app.listen(PORT, () => {
     console.log(`🌐 Mini App запущен на порту ${PORT}`);
     console.log(`   Callback URL для RollyPay: <твой-домен>/rollypay/webhook`);
-});
+});    
