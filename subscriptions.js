@@ -9,8 +9,10 @@ const path = require("path");
 // ============================================================
 const DATA_FILE = path.join(__dirname, "subscriptions-data.json");
 
-// Длительность подписки "Скрыть себя" в днях — поменяй под себя.
+// Длительность подписки "Скрыть себя" в днях по умолчанию — поменяй под себя.
 const HIDE_DURATION_DAYS = 30;
+// Длительность бесплатного триала — поменяй под себя.
+const TRIAL_DURATION_DAYS = 3;
 
 function loadData() {
     try {
@@ -22,7 +24,7 @@ function loadData() {
     }
 }
 
-// { [userId]: { hideUntil: <timestamp в мс> } }
+// { [userId]: { hideUntil: <timestamp в мс>, trialUsed: true|false } }
 let subscriptions = loadData();
 
 function saveData() {
@@ -42,9 +44,10 @@ function isHidden(userId) {
 // Если подписка уже активна — продлевает от текущей даты истечения, а не от "сейчас".
 function grantHide(userId, days = HIDE_DURATION_DAYS) {
     const now = Date.now();
-    const current = (subscriptions[userId] && subscriptions[userId].hideUntil) || now;
+    const entry = subscriptions[userId] || {};
+    const current = entry.hideUntil || now;
     const base = current > now ? current : now;
-    subscriptions[userId] = { hideUntil: base + days * 24 * 60 * 60 * 1000 };
+    subscriptions[userId] = { ...entry, hideUntil: base + days * 24 * 60 * 60 * 1000 };
     saveData();
     return subscriptions[userId].hideUntil;
 }
@@ -53,4 +56,27 @@ function getHideExpiry(userId) {
     return (subscriptions[userId] && subscriptions[userId].hideUntil) || null;
 }
 
-module.exports = { isHidden, grantHide, getHideExpiry, HIDE_DURATION_DAYS };
+function hasUsedTrial(userId) {
+    return !!(subscriptions[userId] && subscriptions[userId].trialUsed);
+}
+
+// Выдаёт бесплатный триал один раз на пользователя. Возвращает { ok, until } —
+// ok: false, если триал уже использован или подписка уже активна.
+function grantTrial(userId, days = TRIAL_DURATION_DAYS) {
+    if (hasUsedTrial(userId)) return { ok: false, reason: "already_used" };
+    if (isHidden(userId)) return { ok: false, reason: "already_active" };
+    const until = grantHide(userId, days);
+    subscriptions[userId] = { ...subscriptions[userId], trialUsed: true };
+    saveData();
+    return { ok: true, until };
+}
+
+module.exports = {
+    isHidden,
+    grantHide,
+    getHideExpiry,
+    hasUsedTrial,
+    grantTrial,
+    HIDE_DURATION_DAYS,
+    TRIAL_DURATION_DAYS
+};
