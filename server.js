@@ -233,6 +233,8 @@ app.post("/api/check", async (req, res) => {
 
         if (status === "paid") {
             grantHide(user.id, tariff.days);
+            const notif = buildPremiumNotification(tariff.days);
+            await sendTelegramMessage(user.id, notif.text, notif.reply_markup);
             return res.json({ paid: true });
         }
         return res.json({ paid: false, status });
@@ -285,7 +287,8 @@ app.post("/rollypay/webhook", express.raw({ type: "*/*" }), async (req, res) => 
         const days = Number(parts[2]) || 30;
         if (!userId) return;
         grantHide(userId, days);
-        await sendTelegramMessage(userId, "✅ <b>Успешно! Ваша подписка активна!</b>");
+        const notif = buildPremiumNotification(days);
+        await sendTelegramMessage(userId, notif.text, notif.reply_markup);
         return;
     }
 
@@ -303,4 +306,4 @@ app.post("/rollypay/webhook", express.raw({ type: "*/*" }), async (req, res) => 
 app.listen(PORT, () => {
     console.log(`🌐 Mini App запущен на порту ${PORT}`);
     console.log(`   Callback URL для RollyPay: <твой-домен>/rollypay/webhook`);
-});    
+});
