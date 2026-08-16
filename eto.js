@@ -20,7 +20,8 @@ const {
     DONATE_ROLLYPAY_TEXT, rollypayAmountMenu,
     PREMIUM_TEXT, premiumMenu,
     HIDE_TARIFFS, getHideTariff, HIDE_TARIFF_TEXT, hideTariffMenu, hideMethodTextFor, hideMethodMenuFor,
-    EMOJI_DONATE_ID, EMOJI_HIDDEN_ID, EMOJI_CRYPTOBOT_ID, EMOJI_XROCKET_ID, EMOJI_ROLLYPAY_ID, EMOJI_WAIT_ID
+    EMOJI_DONATE_ID, EMOJI_HIDDEN_ID, EMOJI_CRYPTOBOT_ID, EMOJI_XROCKET_ID, EMOJI_ROLLYPAY_ID, EMOJI_WAIT_ID,
+    MINIAPP_URL
 } = require("./donate");
 const { isHidden, grantHide } = require("./subscriptions");
 const {
@@ -113,6 +114,26 @@ const HIDE_SUCCESS_TEXT = `${tgEmoji(EMOJI_HIDDEN_ID, "✅")}<b>Успешно! 
 
 async function showHideSuccess(ctx) {
     await editMenuMessage(ctx, HIDE_SUCCESS_TEXT, new InlineKeyboard());
+}
+
+// ============================================================
+// Единый текст + кнопки для уведомления об активации Premium — при оплате
+// ЛЮБЫМ способом и при выдаче администратором. Совпадает с тем, что шлёт
+// miniapp/server.js для оплат через мини-апп, чтобы везде было одинаково.
+// ============================================================
+function daysWord(n) {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return "день";
+    if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "дня";
+    return "дней";
+}
+function buildPremiumNotification(days) {
+    const text = `${tgEmoji(EMOJI_SUCCESS_ID, "✅")}<b>Оплата успешно получена!</b>\nВаш Premium ${days} ${daysWord(days)} активен!`;
+    const reply_markup = new InlineKeyboard()
+        .webApp("🔧 Управлять", `${MINIAPP_URL}/?screen=profile`)
+        .row()
+        .webApp("📱 Mini App", MINIAPP_URL);
+    return { text, reply_markup };
 }
 
 // startMenu — это InlineKeyboard (не Menu), поэтому у него нет своей middleware.
@@ -553,7 +574,8 @@ bot.on("message:successful_payment", async (ctx) => {
     if (payment.invoice_payload && payment.invoice_payload.startsWith("premium_hide_")) {
         const days = Number(payment.invoice_payload.split("_")[2]) || 30;
         grantHide(ctx.from.id, days);
-        await ctx.reply(HIDE_SUCCESS_TEXT, { parse_mode: "HTML" });
+        const notif = buildPremiumNotification(days);
+        await ctx.reply(notif.text, { parse_mode: "HTML", reply_markup: notif.reply_markup });
         return;
     }
 
@@ -662,11 +684,8 @@ bot.on("message:text", async (ctx, next) => {
             grantHide(targetId, days);
             await ctx.reply(`${tgEmoji(EMOJI_SUCCESS_ID, "✅")} Premium выдан пользователю <code>${targetId}</code> на ${days} дней.`, { parse_mode: "HTML" });
             try {
-                await bot.api.sendMessage(
-                    targetId,
-                    `${tgEmoji(EMOJI_HIDDEN_ID, "🎁")}<b>Тебе выдан Premium администратором на ${days} дней!</b>`,
-                    { parse_mode: "HTML" }
-                );
+                const notif = buildPremiumNotification(days);
+                await bot.api.sendMessage(targetId, notif.text, { parse_mode: "HTML", reply_markup: notif.reply_markup });
             } catch (e) {}
             return;
         }
