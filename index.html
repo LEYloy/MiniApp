@@ -164,6 +164,18 @@
     .status-badge.active { background: rgba(31,174,92,.15); color: var(--success); }
     .status-badge.inactive { background: rgba(224,67,63,.12); color: var(--danger); }
 
+    .manage-card { margin-top: 4px; }
+    .manage-box {
+        background: linear-gradient(135deg, var(--bg-card-2), var(--bg-card));
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        text-align: center;
+    }
+    .manage-days { font-size: 40px; font-weight: 800; color: var(--gold); line-height: 1; }
+    .manage-days-label { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+    .manage-until { color: var(--text-dim); font-size: 13px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
     .settings-row {
         background: var(--bg-card);
         border: 1px solid var(--border);
@@ -262,6 +274,17 @@
             <div class="status-badge" id="profileStatusBadge"></div>
         </div>
 
+        <!-- Управление подпиской — видно только когда Premium активен -->
+        <div id="manageCard" class="manage-card hidden">
+            <div class="section-title" data-i18n="manage_title"></div>
+            <div class="manage-box">
+                <div class="manage-days" id="manageDays">—</div>
+                <div class="manage-days-label" id="manageDaysLabel"></div>
+                <div class="manage-until" id="manageUntil"></div>
+                <button class="btn btn-primary" id="extendBtn" data-i18n="extend"></button>
+            </div>
+        </div>
+
         <div class="section-title" data-i18n="settings"></div>
 
         <div class="settings-row">
@@ -330,7 +353,11 @@ const I18N = {
         checking: "Проверяем...",
         not_paid_yet: "⏳ Оплата ещё не поступила. Попробуй ещё раз через пару секунд.",
         check_error: "⚠️ Не удалось проверить оплату.",
-        trial_days: (n) => `Попробовать ${n} дня бесплатно`
+        trial_days: (n) => `Попробовать ${n} дня бесплатно`,
+        manage_title: "Управление подпиской",
+        extend: "Продлить",
+        days_left: "дней осталось",
+        expires_on: "Истекает"
     },
     en: {
         title: "Premium — Hide Yourself",
@@ -362,7 +389,11 @@ const I18N = {
         checking: "Checking...",
         not_paid_yet: "⏳ Payment not received yet. Try again in a few seconds.",
         check_error: "⚠️ Could not check payment.",
-        trial_days: (n) => `Try ${n} days free`
+        trial_days: (n) => `Try ${n} days free`,
+        manage_title: "Manage subscription",
+        extend: "Extend",
+        days_left: "days left",
+        expires_on: "Expires on"
     }
 };
 const TARIFF_LABEL_EN = { "1m": "1 month", "3m": "3 months", "6m": "6 months" };
@@ -467,6 +498,10 @@ function switchPage(name) {
 document.getElementById("navStore").addEventListener("click", () => switchPage("store"));
 document.getElementById("navProfile").addEventListener("click", () => switchPage("profile"));
 document.getElementById("goBuyBtn").addEventListener("click", () => {
+    switchPage("store");
+    showScreen("tariffs");
+});
+document.getElementById("extendBtn").addEventListener("click", () => {
     switchPage("store");
     showScreen("tariffs");
 });
@@ -637,14 +672,22 @@ function renderProfile() {
     document.getElementById("profileAvatar").textContent = (first[0] || "?").toUpperCase();
 
     const badge = document.getElementById("profileStatusBadge");
+    const manageCard = document.getElementById("manageCard");
     if (profileStatus?.premium?.active) {
         const untilDate = profileStatus.premium.until ? new Date(profileStatus.premium.until) : null;
         const untilStr = untilDate ? untilDate.toLocaleDateString(LANG === "en" ? "en-US" : "ru-RU") : "";
         badge.className = "status-badge active";
         badge.textContent = `👑 ${t("premium_active")}${untilStr ? " " + t("until") + " " + untilStr : ""}`;
+
+        manageCard.classList.remove("hidden");
+        const daysLeft = untilDate ? Math.max(0, Math.ceil((untilDate - Date.now()) / (24 * 60 * 60 * 1000))) : 0;
+        document.getElementById("manageDays").textContent = daysLeft;
+        document.getElementById("manageDaysLabel").textContent = t("days_left");
+        document.getElementById("manageUntil").textContent = untilStr ? `${t("expires_on")}: ${untilStr}` : "";
     } else {
         badge.className = "status-badge inactive";
         badge.textContent = t("premium_inactive");
+        manageCard.classList.add("hidden");
     }
 
     const trialCard = document.getElementById("trialCard");
