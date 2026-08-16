@@ -21,10 +21,16 @@ const app = express();
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
 // ============================================================
 function validateInitData(initData) {
-    if (!initData) return null;
+    if (!initData) {
+        console.warn("⚠️ validateInitData: initData пустой (страница открыта не как Telegram WebApp?)");
+        return null;
+    }
     const params = new URLSearchParams(initData);
     const hash = params.get("hash");
-    if (!hash) return null;
+    if (!hash) {
+        console.warn("⚠️ validateInitData: в initData нет поля hash");
+        return null;
+    }
     params.delete("hash");
 
     const dataCheckString = Array.from(params.entries())
@@ -35,17 +41,29 @@ function validateInitData(initData) {
     const secretKey = crypto.createHmac("sha256", "WebAppData").update(BOT_TOKEN).digest();
     const computedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 
-    if (computedHash !== hash) return null;
+    if (computedHash !== hash) {
+        console.warn("⚠️ validateInitData: подпись не совпала — почти всегда это значит, что BOT_TOKEN в config.js этого сервера НЕ совпадает с реальным токеном бота.");
+        console.warn(`   computedHash=${computedHash}`);
+        console.warn(`   receivedHash=${hash}`);
+        return null;
+    }
 
     // Не даём слишком старым initData (на случай перехвата/повтора) — 24 часа с запасом.
     const authDate = Number(params.get("auth_date")) * 1000;
-    if (!authDate || Date.now() - authDate > 24 * 60 * 60 * 1000) return null;
+    if (!authDate || Date.now() - authDate > 24 * 60 * 60 * 1000) {
+        console.warn("⚠️ validateInitData: auth_date слишком старый или отсутствует");
+        return null;
+    }
 
     const userRaw = params.get("user");
-    if (!userRaw) return null;
+    if (!userRaw) {
+        console.warn("⚠️ validateInitData: в initData нет поля user");
+        return null;
+    }
     try {
         return JSON.parse(userRaw); // { id, first_name, username, ... }
     } catch {
+        console.warn("⚠️ validateInitData: не удалось распарсить поле user");
         return null;
     }
 }
@@ -103,7 +121,9 @@ app.post("/api/pay", async (req, res) => {
                 asset: "USDT",
                 description: `Premium: Скрыть себя (${tariff.label}) — ${user.id}`
             });
-            return res.json({ url: invoice.web_app_invoice_url || invoice.pay_url, checkId: String(invoice.invoice_id) });
+            // bot_invoice_url — это t.me/CryptoBot?start=... диплинк: открывает счёт
+            // прямо в чате @CryptoBot внутри Telegram, без браузера.
+            return res.json({ url: invoice.bot_invoice_url || invoice.mini_app_invoice_url || invoice.pay_url, checkId: String(invoice.invoice_id) });
         }
 
         if (method === "xrocket") {
