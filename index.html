@@ -18,17 +18,28 @@
         --success: #1fae5c;
         --danger: #e0433f;
         --gold: #f4c542;
+        --bg-grad: radial-gradient(circle at 50% 0%, #0b1224 0%, #05070d 60%, #010103 100%);
+    }
+    html[data-theme="light"] {
+        --bg: #f4f6fb;
+        --bg-card: #ffffff;
+        --bg-card-2: #eef1f8;
+        --border: #dde3f0;
+        --text: #12172b;
+        --text-dim: #626c85;
+        --bg-grad: radial-gradient(circle at 50% 0%, #ffffff 0%, #eef1f8 60%, #e4e9f5 100%);
     }
     * { box-sizing: border-box; }
     html, body {
         margin: 0;
         padding: 0;
-        background: radial-gradient(circle at 50% 0%, #0b1224 0%, #05070d 60%, #010103 100%);
+        background: var(--bg-grad);
         color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         min-height: 100vh;
+        transition: background .2s, color .2s;
     }
-    .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 90px; }
     .header { text-align: center; margin-bottom: 22px; }
     .header .crown { font-size: 40px; line-height: 1; margin-bottom: 8px; }
     .header h1 {
@@ -57,9 +68,22 @@
         transition: border-color .15s, background .15s;
     }
     .tariff:active { transform: scale(0.99); }
-    .tariff.selected { border-color: var(--primary); background: var(--bg-card-2); }
     .tariff .label { font-weight: 600; font-size: 15px; }
     .tariff .price { color: var(--gold); font-weight: 700; font-size: 15px; }
+
+    .trial-card {
+        background: linear-gradient(135deg, #1fae5c 0%, #0d7a3e 100%);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        margin-bottom: 14px;
+        color: #fff;
+    }
+    .trial-card .label { font-weight: 700; font-size: 15px; }
+    .trial-card .sub { font-size: 12px; opacity: .85; }
 
     .methods { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
     .method-btn {
@@ -81,7 +105,6 @@
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
     }
-    .method-btn .method-icon svg,
     .method-btn .method-icon img { width: 22px; height: 22px; object-fit: contain; }
     .method-btn .price { color: var(--text-dim); font-weight: 500; font-size: 13px; }
     .method-btn:active { transform: scale(0.99); }
@@ -115,55 +138,284 @@
     .success-screen h2 { font-size: 20px; margin: 0 0 8px; color: var(--success); }
     .success-screen p { color: var(--text-dim); font-size: 14px; }
 
+    /* --- Профиль --- */
+    .profile-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+    }
+    .profile-avatar {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #8a5cff);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 26px; font-weight: 700; color: #fff;
+        margin: 0 auto 12px;
+    }
+    .profile-name { font-size: 18px; font-weight: 700; }
+    .profile-username { color: var(--text-dim); font-size: 14px; margin-top: 2px; }
+
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        margin-top: 14px; padding: 8px 14px; border-radius: 999px;
+        font-size: 13px; font-weight: 700;
+    }
+    .status-badge.active { background: rgba(31,174,92,.15); color: var(--success); }
+    .status-badge.inactive { background: rgba(224,67,63,.12); color: var(--danger); }
+
+    .settings-row {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+    .settings-row .label { font-size: 14px; font-weight: 600; }
+    .toggle-group { display: flex; background: var(--bg-card-2); border-radius: 10px; padding: 3px; gap: 3px; }
+    .toggle-group button {
+        border: none; background: transparent; color: var(--text-dim);
+        padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .toggle-group button.active { background: var(--primary); color: #fff; }
+
+    .bottom-nav {
+        position: fixed; left: 0; right: 0; bottom: 0;
+        background: var(--bg-card);
+        border-top: 1px solid var(--border);
+        display: flex;
+        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+        max-width: 480px;
+        margin: 0 auto;
+    }
+    .bottom-nav button {
+        flex: 1; background: none; border: none; cursor: pointer;
+        display: flex; flex-direction: column; align-items: center; gap: 2px;
+        color: var(--text-dim); font-size: 11px; font-weight: 600; padding: 6px 0;
+    }
+    .bottom-nav button .ic { font-size: 20px; }
+    .bottom-nav button.active { color: var(--primary); }
+
     .hidden { display: none !important; }
 </style>
 </head>
 <body>
 <div class="wrap">
-    <div class="header">
-        <div class="crown">👑</div>
-        <h1>Premium</h1>
-        <p>Premium-подписка: полная анонимность в приложении. Скройте свои действия от других: никто не узнает, что вы отправляете, редактируете или удаляете сообщения. Попробуйте бесплатно 3 дня обсолютно бесплатно.</p>
-    </div>
 
-    <div id="screen-tariffs">
-        <div class="section-title">Выбери срок</div>
-        <div class="tariffs" id="tariffList"></div>
-    </div>
-
-    <div id="screen-methods" class="hidden">
-        <div class="section-title">Способ оплаты</div>
-        <div class="methods" id="methodList"></div>
-        <button class="btn btn-danger" id="backToTariffs">Назад</button>
-    </div>
-
-    <div id="screen-pay" class="hidden">
-        <div class="pay-box">
-            <div class="amount" id="payAmount"></div>
-            <div class="desc" id="payDesc"></div>
-            <button class="btn btn-primary" id="payBtn">Оплатить</button>
-            <button class="btn btn-success hidden" id="checkBtn">Проверить оплату</button>
-            <div class="status" id="payStatus"></div>
+    <!-- ===================== СТРАНИЦА: МАГАЗИН ===================== -->
+    <div id="page-store">
+        <div class="header">
+            <div class="crown">👑</div>
+            <h1 data-i18n="title"></h1>
+            <p data-i18n="desc"></p>
         </div>
-        <button class="btn btn-danger" id="backToMethods">Назад</button>
+
+        <div id="screen-tariffs">
+            <div class="trial-card hidden" id="trialCard">
+                <div>
+                    <div class="label" id="trialLabel"></div>
+                    <div class="sub" data-i18n="trial_sub"></div>
+                </div>
+                <div>→</div>
+            </div>
+            <div class="section-title" data-i18n="choose_term"></div>
+            <div class="tariffs" id="tariffList"></div>
+        </div>
+
+        <div id="screen-methods" class="hidden">
+            <div class="section-title" data-i18n="payment_method"></div>
+            <div class="methods" id="methodList"></div>
+            <button class="btn btn-danger" id="backToTariffs" data-i18n="back"></button>
+        </div>
+
+        <div id="screen-pay" class="hidden">
+            <div class="pay-box">
+                <div class="amount" id="payAmount"></div>
+                <div class="desc" id="payDesc"></div>
+                <button class="btn btn-primary" id="payBtn" data-i18n="pay"></button>
+                <button class="btn btn-success hidden" id="checkBtn" data-i18n="check_payment"></button>
+                <div class="status" id="payStatus"></div>
+            </div>
+            <button class="btn btn-danger" id="backToMethods" data-i18n="back"></button>
+        </div>
+
+        <div id="screen-success" class="success-screen hidden">
+            <div class="icon">✅</div>
+            <h2 data-i18n="success_title"></h2>
+            <p data-i18n="success_sub"></p>
+        </div>
     </div>
 
-    <div id="screen-success" class="success-screen hidden">
-        <div class="icon">✅</div>
-        <h2>Успешно! Ваша подписка активна!</h2>
-        <p>Можешь закрыть это окно — бот тоже пришлёт подтверждение в чат.</p>
+    <!-- ===================== СТРАНИЦА: ПРОФИЛЬ ===================== -->
+    <div id="page-profile" class="hidden">
+        <div class="header">
+            <h1 data-i18n="profile_title"></h1>
+        </div>
+
+        <div class="profile-card">
+            <div class="profile-avatar" id="profileAvatar">?</div>
+            <div class="profile-name" id="profileName">—</div>
+            <div class="profile-username" id="profileUsername"></div>
+            <div class="status-badge" id="profileStatusBadge"></div>
+        </div>
+
+        <div class="section-title" data-i18n="settings"></div>
+
+        <div class="settings-row">
+            <span class="label" data-i18n="theme"></span>
+            <div class="toggle-group" id="themeToggle">
+                <button data-value="dark" data-i18n="theme_dark"></button>
+                <button data-value="light" data-i18n="theme_light"></button>
+            </div>
+        </div>
+
+        <div class="settings-row">
+            <span class="label" data-i18n="language"></span>
+            <div class="toggle-group" id="langToggle">
+                <button data-value="ru">RU</button>
+                <button data-value="en">EN</button>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="goBuyBtn" data-i18n="buy_premium"></button>
     </div>
+
+</div>
+
+<div class="bottom-nav">
+    <button data-page="store" id="navStore"><span class="ic">🛒</span><span data-i18n="nav_store"></span></button>
+    <button data-page="profile" id="navProfile"><span class="ic">👤</span><span data-i18n="nav_profile"></span></button>
 </div>
 
 <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const initData = tg?.initData || "";
+const tgUser = tg?.initDataUnsafe?.user || null;
 
+// ============================================================
+// i18n — RU/EN
+// ============================================================
+const I18N = {
+    ru: {
+        title: "Premium — Скрыть себя",
+        desc: "Владельцы бизнес-ботов не увидят твоё имя, юзернейм и содержимое сообщений — вместо этого им придёт уведомление, что у собеседника подключен Premium.",
+        choose_term: "Выбери срок",
+        payment_method: "Способ оплаты",
+        back: "Назад",
+        pay: "Оплатить",
+        check_payment: "Проверить оплату",
+        success_title: "Успешно! Ваша подписка активна!",
+        success_sub: "Можешь закрыть это окно — бот тоже пришлёт подтверждение в чат.",
+        trial_sub: "Бесплатно, без оплаты",
+        profile_title: "Профиль",
+        settings: "Настройки",
+        theme: "Тема",
+        theme_dark: "Тёмная",
+        theme_light: "Светлая",
+        language: "Язык",
+        buy_premium: "Купить Premium",
+        nav_store: "Premium",
+        nav_profile: "Профиль",
+        premium_active: "Premium активен",
+        premium_inactive: "Нет подписки",
+        until: "до",
+        creating_invoice: "Создаём счёт...",
+        opening_payment: "Открываем оплату...",
+        payment_failed: "Оплата не прошла.",
+        payment_cancelled: "Оплата отменена.",
+        checking: "Проверяем...",
+        not_paid_yet: "⏳ Оплата ещё не поступила. Попробуй ещё раз через пару секунд.",
+        check_error: "⚠️ Не удалось проверить оплату.",
+        trial_days: (n) => `Попробовать ${n} дня бесплатно`
+    },
+    en: {
+        title: "Premium — Hide Yourself",
+        desc: "Business bot owners won't see your name, username or message content — instead they'll get a notice that Premium is active for this contact.",
+        choose_term: "Choose duration",
+        payment_method: "Payment method",
+        back: "Back",
+        pay: "Pay",
+        check_payment: "Check payment",
+        success_title: "Success! Your subscription is active!",
+        success_sub: "You can close this window — the bot will also confirm it in chat.",
+        trial_sub: "Free, no payment",
+        profile_title: "Profile",
+        settings: "Settings",
+        theme: "Theme",
+        theme_dark: "Dark",
+        theme_light: "Light",
+        language: "Language",
+        buy_premium: "Buy Premium",
+        nav_store: "Premium",
+        nav_profile: "Profile",
+        premium_active: "Premium active",
+        premium_inactive: "No subscription",
+        until: "until",
+        creating_invoice: "Creating invoice...",
+        opening_payment: "Opening payment...",
+        payment_failed: "Payment failed.",
+        payment_cancelled: "Payment cancelled.",
+        checking: "Checking...",
+        not_paid_yet: "⏳ Payment not received yet. Try again in a few seconds.",
+        check_error: "⚠️ Could not check payment.",
+        trial_days: (n) => `Try ${n} days free`
+    }
+};
+const TARIFF_LABEL_EN = { "1m": "1 month", "3m": "3 months", "6m": "6 months" };
+
+let LANG = localStorage.getItem("miniapp_lang") || "ru";
+let THEME = localStorage.getItem("miniapp_theme") || "dark";
+
+function t(key, ...args) {
+    const v = I18N[LANG][key];
+    return typeof v === "function" ? v(...args) : v;
+}
+
+function applyTheme() {
+    document.documentElement.setAttribute("data-theme", THEME);
+    document.querySelectorAll("#themeToggle button").forEach(b => {
+        b.classList.toggle("active", b.dataset.value === THEME);
+    });
+    localStorage.setItem("miniapp_theme", THEME);
+}
+
+function applyLanguage() {
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll("#langToggle button").forEach(b => {
+        b.classList.toggle("active", b.dataset.value === LANG);
+    });
+    localStorage.setItem("miniapp_lang", LANG);
+    renderTariffs();
+    if (selectedTariff) renderMethods();
+    renderProfile();
+}
+
+document.getElementById("themeToggle").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    THEME = btn.dataset.value;
+    applyTheme();
+});
+document.getElementById("langToggle").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    LANG = btn.dataset.value;
+    applyLanguage();
+});
+
+// ============================================================
+// Способы оплаты
+// ============================================================
 const METHOD_LABELS = {
     stars: {
         name: "Telegram Stars", priceKey: "priceStars", suffix: "",
-        color: "#0d0d0c",
+        color: "#f4c542",
         img: "https://api.wizard-bot.com/docs/assets/star-Cg9w1peQ.png"
     },
     cryptobot: {
@@ -185,7 +437,8 @@ const METHOD_LABELS = {
 
 let tariffs = [];
 let selectedTariff = null;
-let currentPay = null; // { method, checkId }
+let currentPay = null;
+let profileStatus = null; // ответ /api/status
 
 const screens = {
     tariffs: document.getElementById("screen-tariffs"),
@@ -198,23 +451,51 @@ function showScreen(name) {
     screens[name].classList.remove("hidden");
 }
 
+// ============================================================
+// Навигация между страницами (магазин / профиль)
+// ============================================================
+const pages = {
+    store: document.getElementById("page-store"),
+    profile: document.getElementById("page-profile")
+};
+function switchPage(name) {
+    Object.entries(pages).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
+    document.getElementById("navStore").classList.toggle("active", name === "store");
+    document.getElementById("navProfile").classList.toggle("active", name === "profile");
+    if (name === "profile") loadProfile();
+}
+document.getElementById("navStore").addEventListener("click", () => switchPage("store"));
+document.getElementById("navProfile").addEventListener("click", () => switchPage("profile"));
+document.getElementById("goBuyBtn").addEventListener("click", () => {
+    switchPage("store");
+    showScreen("tariffs");
+});
+
 async function loadTariffs() {
     const res = await fetch("/api/tariffs");
     const data = await res.json();
     tariffs = data.tariffs || [];
+    renderTariffs();
+}
+
+function tariffLabel(t) {
+    return LANG === "en" ? (TARIFF_LABEL_EN[t.id] || t.label) : t.label;
+}
+
+function renderTariffs() {
     const list = document.getElementById("tariffList");
     list.innerHTML = "";
-    tariffs.forEach(t => {
+    tariffs.forEach(tf => {
         const el = document.createElement("div");
         el.className = "tariff";
-        el.innerHTML = `<span class="label">${t.label}</span><span class="price">от ${t.priceRub} ₽</span>`;
-        el.addEventListener("click", () => selectTariff(t));
+        el.innerHTML = `<span class="label">${tariffLabel(tf)}</span><span class="price">${LANG === "en" ? "from" : "от"} ${tf.priceRub} ₽</span>`;
+        el.addEventListener("click", () => selectTariff(tf));
         list.appendChild(el);
     });
 }
 
-function selectTariff(t) {
-    selectedTariff = t;
+function selectTariff(tf) {
+    selectedTariff = tf;
     renderMethods();
     showScreen("methods");
 }
@@ -237,12 +518,6 @@ function renderMethods() {
     });
 }
 
-document.getElementById("backToTariffs").addEventListener("click", () => showScreen("tariffs"));
-document.getElementById("backToMethods").addEventListener("click", () => showScreen("methods"));
-
-// Если ссылка — t.me-диплинк (в бота CryptoBot/xRocket), открываем её ВНУТРИ Telegram
-// (openTelegramLink), а не в браузере. Для остальных (обычные веб-страницы, СБП) —
-// открываем как обычную ссылку.
 function openPaymentLink(url) {
     if (url.startsWith("https://t.me/") && tg?.openTelegramLink) {
         tg.openTelegramLink(url);
@@ -253,16 +528,19 @@ function openPaymentLink(url) {
     }
 }
 
+document.getElementById("backToTariffs").addEventListener("click", () => showScreen("tariffs"));
+document.getElementById("backToMethods").addEventListener("click", () => showScreen("methods"));
+
 async function startPay(method) {
     const m = METHOD_LABELS[method];
     document.getElementById("payAmount").textContent = `${selectedTariff[m.priceKey]}${m.suffix}`;
-    document.getElementById("payDesc").textContent = `${m.name} · ${selectedTariff.label}`;
+    document.getElementById("payDesc").textContent = `${m.name} · ${tariffLabel(selectedTariff)}`;
     document.getElementById("payStatus").textContent = "";
     document.getElementById("checkBtn").classList.add("hidden");
     document.getElementById("payBtn").classList.remove("hidden");
     showScreen("pay");
 
-    document.getElementById("payStatus").textContent = "Создаём счёт...";
+    document.getElementById("payStatus").textContent = t("creating_invoice");
     try {
         const res = await fetch("/api/pay", {
             method: "POST",
@@ -270,21 +548,20 @@ async function startPay(method) {
             body: JSON.stringify({ method, tariffId: selectedTariff.id, initData })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || data.error || "Ошибка");
+        if (!res.ok) throw new Error(data.message || data.error || "Error");
 
         currentPay = { method, checkId: data.checkId };
 
-        // Stars — открываем окно оплаты СРАЗУ, без лишнего клика на "Оплатить".
         if (method === "stars" && tg?.openInvoice) {
             document.getElementById("payBtn").classList.add("hidden");
-            document.getElementById("payStatus").textContent = "Открываем оплату...";
+            document.getElementById("payStatus").textContent = t("opening_payment");
             tg.openInvoice(data.url, (status) => {
                 if (status === "paid") {
                     showSuccess();
                 } else if (status === "failed") {
-                    document.getElementById("payStatus").textContent = "Оплата не прошла.";
+                    document.getElementById("payStatus").textContent = t("payment_failed");
                 } else if (status === "cancelled") {
-                    document.getElementById("payStatus").textContent = "Оплата отменена.";
+                    document.getElementById("payStatus").textContent = t("payment_cancelled");
                 } else {
                     document.getElementById("payStatus").textContent = "";
                 }
@@ -303,7 +580,7 @@ async function startPay(method) {
 
 document.getElementById("checkBtn").addEventListener("click", async () => {
     if (!currentPay) return;
-    document.getElementById("payStatus").textContent = "Проверяем...";
+    document.getElementById("payStatus").textContent = t("checking");
     try {
         const res = await fetch("/api/check", {
             method: "POST",
@@ -314,19 +591,101 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
         if (data.paid) {
             showSuccess();
         } else {
-            document.getElementById("payStatus").textContent = "⏳ Оплата ещё не поступила. Попробуй ещё раз через пару секунд.";
+            document.getElementById("payStatus").textContent = t("not_paid_yet");
         }
     } catch (err) {
-        document.getElementById("payStatus").textContent = "⚠️ Не удалось проверить оплату.";
+        document.getElementById("payStatus").textContent = t("check_error");
     }
 });
 
 function showSuccess() {
     showScreen("success");
     tg?.HapticFeedback?.notificationOccurred?.("success");
+    loadProfile();
 }
 
+// ============================================================
+// Триал (3 дня бесплатно)
+// ============================================================
+document.getElementById("trialCard").addEventListener("click", async () => {
+    try {
+        const res = await fetch("/api/trial", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            showScreen("success");
+            tg?.HapticFeedback?.notificationOccurred?.("success");
+            loadProfile();
+        }
+    } catch (e) {}
+});
+
+// ============================================================
+// Профиль
+// ============================================================
+function renderProfile() {
+    if (!tgUser && !profileStatus) return;
+    const first = (profileStatus?.user?.first_name) || tgUser?.first_name || "";
+    const last = (profileStatus?.user?.last_name) || tgUser?.last_name || "";
+    const username = (profileStatus?.user?.username) || tgUser?.username || null;
+
+    document.getElementById("profileName").textContent = `${first} ${last}`.trim() || "—";
+    document.getElementById("profileUsername").textContent = username ? "@" + username : "";
+    document.getElementById("profileAvatar").textContent = (first[0] || "?").toUpperCase();
+
+    const badge = document.getElementById("profileStatusBadge");
+    if (profileStatus?.premium?.active) {
+        const untilDate = profileStatus.premium.until ? new Date(profileStatus.premium.until) : null;
+        const untilStr = untilDate ? untilDate.toLocaleDateString(LANG === "en" ? "en-US" : "ru-RU") : "";
+        badge.className = "status-badge active";
+        badge.textContent = `👑 ${t("premium_active")}${untilStr ? " " + t("until") + " " + untilStr : ""}`;
+    } else {
+        badge.className = "status-badge inactive";
+        badge.textContent = t("premium_inactive");
+    }
+
+    const trialCard = document.getElementById("trialCard");
+    if (profileStatus?.trialAvailable) {
+        trialCard.classList.remove("hidden");
+        document.getElementById("trialLabel").textContent = t("trial_days", 3);
+    } else {
+        trialCard.classList.add("hidden");
+    }
+}
+
+async function loadProfile() {
+    try {
+        const res = await fetch("/api/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            profileStatus = data;
+            renderProfile();
+        }
+    } catch (e) {}
+}
+
+// ============================================================
+// Старт
+// ============================================================
+applyTheme();
+applyLanguage();
 loadTariffs();
+loadProfile();
+
+// Если открыли по ссылке ?screen=profile (например, из уведомления бота) —
+// сразу показываем профиль.
+if (new URLSearchParams(window.location.search).get("screen") === "profile") {
+    switchPage("profile");
+} else {
+    switchPage("store");
+}
 </script>
 </body>
 </html>
