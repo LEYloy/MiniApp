@@ -176,6 +176,21 @@
     .manage-days-label { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
     .manage-until { color: var(--text-dim); font-size: 13px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 
+    .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-slider {
+        position: absolute; cursor: pointer; inset: 0;
+        background: var(--bg-card-2); border: 1px solid var(--border);
+        border-radius: 999px; transition: background .15s;
+    }
+    .switch-slider::before {
+        content: ""; position: absolute; height: 18px; width: 18px;
+        left: 3px; top: 50%; transform: translateY(-50%);
+        background: #fff; border-radius: 50%; transition: transform .15s;
+    }
+    .switch input:checked + .switch-slider { background: var(--success); border-color: var(--success); }
+    .switch input:checked + .switch-slider::before { transform: translate(20px, -50%); }
+
     .settings-row {
         background: var(--bg-card);
         border: 1px solid var(--border);
@@ -283,6 +298,14 @@
                 <div class="manage-until" id="manageUntil"></div>
                 <button class="btn btn-primary" id="extendBtn" data-i18n="extend"></button>
             </div>
+            <div class="settings-row">
+                <span class="label" data-i18n="hide_toggle_label"></span>
+                <label class="switch">
+                    <input type="checkbox" id="hideToggle" />
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div class="status" id="hideToggleStatus"></div>
         </div>
 
         <div class="section-title" data-i18n="settings"></div>
@@ -357,7 +380,11 @@ const I18N = {
         manage_title: "Управление подпиской",
         extend: "Продлить",
         days_left: "дней осталось",
-        expires_on: "Истекает"
+        expires_on: "Истекает",
+        hide_toggle_label: "Скрыть себя включено",
+        hide_on: "Включено — тебя не видно.",
+        hide_off: "Выключено — тебя снова видно, дни при этом не сгорают.",
+        toggle_error: "⚠️ Не удалось изменить настройку."
     },
     en: {
         title: "Premium — Hide Yourself",
@@ -393,7 +420,11 @@ const I18N = {
         manage_title: "Manage subscription",
         extend: "Extend",
         days_left: "days left",
-        expires_on: "Expires on"
+        expires_on: "Expires on",
+        hide_toggle_label: "Hide myself enabled",
+        hide_on: "Enabled — you're hidden.",
+        hide_off: "Disabled — you're visible again, days keep counting though.",
+        toggle_error: "⚠️ Could not update the setting."
     }
 };
 const TARIFF_LABEL_EN = { "1m": "1 month", "3m": "3 months", "6m": "6 months" };
@@ -658,6 +689,25 @@ document.getElementById("trialCard").addEventListener("click", async () => {
     } catch (e) {}
 });
 
+document.getElementById("hideToggle").addEventListener("change", async (e) => {
+    const enabled = e.target.checked;
+    document.getElementById("hideToggleStatus").textContent = "...";
+    try {
+        const res = await fetch("/api/toggle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, enabled })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "error");
+        document.getElementById("hideToggleStatus").textContent = enabled ? t("hide_on") : t("hide_off");
+        if (profileStatus?.premium) profileStatus.premium.enabled = enabled;
+    } catch (err) {
+        e.target.checked = !enabled;
+        document.getElementById("hideToggleStatus").textContent = t("toggle_error");
+    }
+});
+
 // ============================================================
 // Профиль
 // ============================================================
@@ -673,17 +723,24 @@ function renderProfile() {
 
     const badge = document.getElementById("profileStatusBadge");
     const manageCard = document.getElementById("manageCard");
-    if (profileStatus?.premium?.active) {
-        const untilDate = profileStatus.premium.until ? new Date(profileStatus.premium.until) : null;
-        const untilStr = untilDate ? untilDate.toLocaleDateString(LANG === "en" ? "en-US" : "ru-RU") : "";
+    const until = profileStatus?.premium?.until;
+    const untilDate = until ? new Date(until) : null;
+    const hasSubscription = untilDate && untilDate.getTime() > Date.now();
+
+    if (hasSubscription) {
+        const untilStr = untilDate.toLocaleDateString(LANG === "en" ? "en-US" : "ru-RU");
         badge.className = "status-badge active";
-        badge.textContent = `👑 ${t("premium_active")}${untilStr ? " " + t("until") + " " + untilStr : ""}`;
+        badge.textContent = `👑 ${t("premium_active")} ${t("until")} ${untilStr}`;
 
         manageCard.classList.remove("hidden");
-        const daysLeft = untilDate ? Math.max(0, Math.ceil((untilDate - Date.now()) / (24 * 60 * 60 * 1000))) : 0;
+        const daysLeft = Math.max(0, Math.ceil((untilDate - Date.now()) / (24 * 60 * 60 * 1000)));
         document.getElementById("manageDays").textContent = daysLeft;
         document.getElementById("manageDaysLabel").textContent = t("days_left");
-        document.getElementById("manageUntil").textContent = untilStr ? `${t("expires_on")}: ${untilStr}` : "";
+        document.getElementById("manageUntil").textContent = `${t("expires_on")}: ${untilStr}`;
+
+        const enabled = !!profileStatus.premium.enabled;
+        document.getElementById("hideToggle").checked = enabled;
+        document.getElementById("hideToggleStatus").textContent = enabled ? t("hide_on") : t("hide_off");
     } else {
         badge.className = "status-badge inactive";
         badge.textContent = t("premium_inactive");
