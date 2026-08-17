@@ -24,7 +24,7 @@ function loadData() {
     }
 }
 
-// { [userId]: { hideUntil: <timestamp в мс>, trialUsed: true|false } }
+// { [userId]: { hideUntil: <timestamp в мс>, trialUsed: true|false, enabled: true|false } }
 let subscriptions = loadData();
 
 function saveData() {
@@ -35,21 +35,45 @@ function saveData() {
     }
 }
 
+// enabled по умолчанию true (если поле ещё не задавали — старые записи).
+function isEnabled(userId) {
+    const entry = subscriptions[userId];
+    return !entry || entry.enabled !== false;
+}
+
+function setEnabled(userId, enabled) {
+    const entry = subscriptions[userId] || {};
+    subscriptions[userId] = { ...entry, enabled };
+    saveData();
+}
+
 function isHidden(userId) {
     const entry = subscriptions[userId];
     if (!entry || !entry.hideUntil) return false;
+    if (entry.enabled === false) return false;
     return Date.now() < entry.hideUntil;
 }
 
 // Если подписка уже активна — продлевает от текущей даты истечения, а не от "сейчас".
+// Заодно снова включает (enabled: true) — на случай, если человек её выключал.
 function grantHide(userId, days = HIDE_DURATION_DAYS) {
     const now = Date.now();
     const entry = subscriptions[userId] || {};
     const current = entry.hideUntil || now;
     const base = current > now ? current : now;
-    subscriptions[userId] = { ...entry, hideUntil: base + days * 24 * 60 * 60 * 1000 };
+    subscriptions[userId] = { ...entry, hideUntil: base + days * 24 * 60 * 60 * 1000, enabled: true };
     saveData();
     return subscriptions[userId].hideUntil;
+}
+
+// Забрать Premium (админом) — сразу "гасит" подписку, не трогая trialUsed
+// (чтобы нельзя было забрать и тут же выдать себе новый бесплатный триал).
+function revokeHide(userId) {
+    const entry = subscriptions[userId];
+    if (!entry) return false;
+    subscriptions[userId] = { ...entry, hideUntil: Date.now() - 1 };
+    saveData();
+    return true;
 }
 
 function getHideExpiry(userId) {
@@ -73,7 +97,10 @@ function grantTrial(userId, days = TRIAL_DURATION_DAYS) {
 
 module.exports = {
     isHidden,
+    isEnabled,
+    setEnabled,
     grantHide,
+    revokeHide,
     getHideExpiry,
     hasUsedTrial,
     grantTrial,
