@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const { BOT_TOKEN, YOUR_TELEGRAM_ID } = require("./config");
 const { HIDE_TARIFFS, getHideTariff } = require("./tariffs");
 const {
-    grantHide, isHidden, getHideExpiry, hasUsedTrial, grantTrial, TRIAL_DURATION_DAYS
+    grantHide, revokeHide, isHidden, isEnabled, setEnabled, getHideExpiry, hasUsedTrial, grantTrial, TRIAL_DURATION_DAYS
 } = require("./subscriptions");
 const {
     createCryptoBotInvoice, checkCryptoBotInvoice,
@@ -132,9 +132,20 @@ app.post("/api/status", (req, res) => {
             last_name: user.last_name || null,
             username: user.username || null
         },
-        premium: { active, until: getHideExpiry(user.id) },
+        premium: { active, until: getHideExpiry(user.id), enabled: isEnabled(user.id) },
         trialAvailable: !hasUsedTrial(user.id) && !active
     });
+});
+
+// --- Включить/выключить "Скрыть себя" самим пользователем (без изменения срока) ---
+app.post("/api/toggle", (req, res) => {
+    const { initData, enabled } = req.body || {};
+    const user = validateInitData(initData);
+    if (!user) return res.status(401).json({ error: "invalid_init_data" });
+    if (!getHideExpiry(user.id)) return res.status(400).json({ error: "no_subscription" });
+
+    setEnabled(user.id, !!enabled);
+    res.json({ ok: true, enabled: !!enabled });
 });
 
 // --- Бесплатный триал (один раз на пользователя) ---
@@ -149,6 +160,45 @@ app.post("/api/trial", async (req, res) => {
     const notif = buildPremiumNotification(TRIAL_DURATION_DAYS);
     await sendTelegramMessage(user.id, notif.text, notif.reply_markup);
     res.json({ ok: true, until: result.until });
+});
+
+// ============================================================
+// Служебное API для бота (eto.js) — бот и Mini App работают на РАЗНЫХ
+// серверах (бот локально, Mini App на Railway), поэтому у них два разных
+// файла subscriptions-data.json. Чтобы не было рассинхрона, Railway — теперь
+// единственный источник правды: бот дёргает эти эндпоинты вместо того, чтобы
+// писать в свой локальный файл. Авторизация — токен бота в заголовке
+// X-Bot-Token (секрет уже общий для обеих сторон, отдельный ключ не нужен).
+// ============================================================
+function checkBotAuth(req, res) {
+    if (req.headers["x-bot-token"] !== BOT_TOKEN) {
+        res.status(403).json({ error: "forbidden" });
+        return false;
+    }
+    return true;
+}
+
+app.post("/api/admin/grant", (req, res) => {
+    if (!checkBotAuth(req, res)) return;
+    const { userId, days } = req.body || {};
+    if (!userId || !days) return res.status(400).json({ error: "userId and days required" });
+    const until = grantHide(Number(userId), Number(days));
+    res.json({ ok: true, until });
+});
+
+app.post("/api/admin/revoke", (req, res) => {
+    if (!checkBotAuth(req, res)) return;
+    const { userId } = req.body || {};
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    const ok = revokeHide(Number(userId));
+    res.json({ ok });
+});
+
+app.get("/api/admin/status", (req, res) => {
+    if (!checkBotAuth(req, res)) return;
+    const userId = Number(req.query.userId);
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    res.json({ active: isHidden(userId), until: getHideExpiry(userId), enabled: isEnabled(userId) });
 });
 
 // --- Создать оплату ---
