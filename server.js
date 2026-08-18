@@ -12,13 +12,14 @@ const {
     createRollyPayment, checkRollyPayment,
     ROLLYPAY_SIGNING_SECRET
 } = require("./payments");
+const { createPromo, redeemPromo, listPromos } = require("./promocodes");
 
 // Домен этого деплоя — нужен, чтобы кнопки в уведомлениях бота вели сюда же.
 // Обнови, если домен на Railway поменяется.
 const MINIAPP_URL = "https://miniapp-production-6293.up.railway.app";
 
 // premium-эмодзи для уведомлений об оплате — ЗАМЕНИ на свой emoji-id.
-const EMOJI_SUCCESS_ID = "5416074955643203200";
+const EMOJI_SUCCESS_ID = "6023773095284707791";
 function tgEmoji(id, fallback) {
     return `<tg-emoji emoji-id="${id}">${fallback}</tg-emoji>`;
 }
@@ -133,7 +134,8 @@ app.post("/api/status", (req, res) => {
             username: user.username || null
         },
         premium: { active, until: getHideExpiry(user.id), enabled: isEnabled(user.id) },
-        trialAvailable: !hasUsedTrial(user.id) && !active
+        trialAvailable: !hasUsedTrial(user.id) && !active,
+        isAdmin: user.id === YOUR_TELEGRAM_ID
     });
 });
 
@@ -146,6 +148,48 @@ app.post("/api/toggle", (req, res) => {
 
     setEnabled(user.id, !!enabled);
     res.json({ ok: true, enabled: !!enabled });
+});
+
+// --- Промокоды ---
+
+// Создать промокод — только для админа (проверяем через initData, не через
+// X-Bot-Token, т.к. это дёргает сама mini app, а не бот).
+app.post("/api/promo/create", (req, res) => {
+    const { initData, days, maxUses } = req.body || {};
+    const user = validateInitData(initData);
+    if (!user) return res.status(401).json({ error: "invalid_init_data" });
+    if (user.id !== YOUR_TELEGRAM_ID) return res.status(403).json({ error: "not_admin" });
+
+    const d = Number(days);
+    const m = Math.max(1, Number(maxUses) || 1);
+    if (!d || d <= 0) return res.status(400).json({ error: "invalid_days" });
+
+    const code = createPromo(d, m);
+    res.json({ ok: true, code });
+});
+
+// Список созданных промокодов — тоже только для админа.
+app.post("/api/promo/list", (req, res) => {
+    const { initData } = req.body || {};
+    const user = validateInitData(initData);
+    if (!user) return res.status(401).json({ error: "invalid_init_data" });
+    if (user.id !== YOUR_TELEGRAM_ID) return res.status(403).json({ error: "not_admin" });
+    res.json({ promos: listPromos() });
+});
+
+// Активировать промокод — любой пользователь.
+app.post("/api/promo/redeem", async (req, res) => {
+    const { initData, code } = req.body || {};
+    const user = validateInitData(initData);
+    if (!user) return res.status(401).json({ error: "invalid_init_data" });
+
+    const result = redeemPromo(code, user.id);
+    if (!result.ok) return res.status(400).json({ error: result.reason });
+
+    grantHide(user.id, result.days);
+    const notif = buildPremiumNotification(result.days);
+    await sendTelegramMessage(user.id, notif.text, notif.reply_markup);
+    res.json({ ok: true, days: result.days });
 });
 
 // --- Бесплатный триал (один раз на пользователя) ---

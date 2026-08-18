@@ -225,6 +225,23 @@
     }
     .bottom-nav button .ic { font-size: 20px; }
     .bottom-nav button.active { color: var(--primary); }
+    .bottom-nav button .nav-img { display: flex; align-items: center; justify-content: center; }
+    .bottom-nav button .nav-img img { width: 22px; height: 22px; object-fit: contain; border-radius: 6px; }
+
+    .promo-input {
+        width: 100%;
+        background: var(--bg-card-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 18px;
+        text-align: center;
+        letter-spacing: .1em;
+        color: var(--text);
+        margin-bottom: 10px;
+        font-family: inherit;
+    }
+    .promo-input::placeholder { color: var(--text-dim); letter-spacing: normal; }
 
     .hidden { display: none !important; }
 </style>
@@ -329,11 +346,44 @@
         <button class="btn btn-primary" id="goBuyBtn" data-i18n="buy_premium"></button>
     </div>
 
+    <!-- ===================== СТРАНИЦА: ПРОМОКОД (активировать) ===================== -->
+    <div id="page-promo" class="hidden">
+        <div class="header">
+            <h1 data-i18n="promo_title"></h1>
+            <p data-i18n="promo_desc"></p>
+        </div>
+        <div class="pay-box">
+            <input type="text" id="promoInput" class="promo-input" placeholder="XXXXXXXX" maxlength="16" />
+            <button class="btn btn-success" id="promoRedeemBtn" data-i18n="promo_activate"></button>
+            <div class="status" id="promoStatus"></div>
+        </div>
+    </div>
+
+    <!-- ===================== СТРАНИЦА: СОЗДАТЬ ПРОМОКОД (только админ) ===================== -->
+    <div id="page-promo-admin" class="hidden">
+        <div class="header">
+            <h1 data-i18n="promo_admin_title"></h1>
+        </div>
+        <div class="pay-box">
+            <input type="number" id="promoDaysInput" class="promo-input" placeholder="30" />
+            <div class="status" data-i18n="promo_days_hint" style="margin-bottom:8px"></div>
+            <input type="number" id="promoUsesInput" class="promo-input" placeholder="1" />
+            <div class="status" data-i18n="promo_uses_hint" style="margin-bottom:8px"></div>
+            <button class="btn btn-primary" id="promoCreateBtn" data-i18n="promo_create"></button>
+            <div class="status" id="promoAdminStatus"></div>
+        </div>
+        <div id="promoResult" class="manage-box hidden" style="margin-top:14px;">
+            <div class="manage-days-label" data-i18n="promo_result_label"></div>
+            <div class="manage-days" id="promoResultCode" style="font-size:26px;"></div>
+        </div>
+    </div>
+
 </div>
 
 <div class="bottom-nav">
     <button data-page="store" id="navStore"><span class="ic">🛒</span><span data-i18n="nav_store"></span></button>
-    <button data-page="profile" id="navProfile"><span class="ic">👤</span><span data-i18n="nav_profile"></span></button>
+    <button data-page="profile" id="navProfile"><span class="ic nav-img"><img src="https://ltdfoto.ru/images/2026/08/17/4519729.png" alt="" /></span><span data-i18n="nav_profile"></span></button>
+    <button data-page="promo" id="navPromo"><span class="ic nav-img"><img src="https://ltdfoto.ru/images/2026/08/17/istockphoto-1414997110-612x612.jpg" alt="" /></span><span data-i18n="nav_promo"></span></button>
 </div>
 
 <script>
@@ -384,7 +434,23 @@ const I18N = {
         hide_toggle_label: "Скрыть себя включено",
         hide_on: "Включено — тебя не видно.",
         hide_off: "Выключено — тебя снова видно, дни при этом не сгорают.",
-        toggle_error: "⚠️ Не удалось изменить настройку."
+        toggle_error: "⚠️ Не удалось изменить настройку.",
+        nav_promo: "Промокод",
+        promo_title: "Активировать промокод",
+        promo_desc: "Введи код, который тебе дали — и получишь Premium сразу.",
+        promo_activate: "Активировать",
+        promo_checking: "Проверяем...",
+        promo_success: (n) => `✅ Активировано! Premium ${n} дней активен.`,
+        promo_not_found: "⚠️ Такого промокода не существует.",
+        promo_already_used: "⚠️ Ты уже активировал(а) этот промокод.",
+        promo_exhausted: "⚠️ У этого промокода закончились активации.",
+        promo_error: "⚠️ Не удалось активировать промокод.",
+        promo_admin_title: "Создать промокод",
+        promo_days_hint: "Дней Premium",
+        promo_uses_hint: "Сколько раз можно активировать",
+        promo_create: "Создать",
+        promo_result_label: "Готово! Промокод:",
+        promo_create_error: "⚠️ Не удалось создать промокод."
     },
     en: {
         title: "Premium — Hide Yourself",
@@ -424,7 +490,23 @@ const I18N = {
         hide_toggle_label: "Hide myself enabled",
         hide_on: "Enabled — you're hidden.",
         hide_off: "Disabled — you're visible again, days keep counting though.",
-        toggle_error: "⚠️ Could not update the setting."
+        toggle_error: "⚠️ Could not update the setting.",
+        nav_promo: "Promo code",
+        promo_title: "Redeem promo code",
+        promo_desc: "Enter the code you got — and Premium activates instantly.",
+        promo_activate: "Activate",
+        promo_checking: "Checking...",
+        promo_success: (n) => `✅ Activated! Premium is active for ${n} days.`,
+        promo_not_found: "⚠️ This promo code doesn't exist.",
+        promo_already_used: "⚠️ You already used this code.",
+        promo_exhausted: "⚠️ This promo code ran out of activations.",
+        promo_error: "⚠️ Could not activate promo code.",
+        promo_admin_title: "Create promo code",
+        promo_days_hint: "Premium days",
+        promo_uses_hint: "How many times it can be used",
+        promo_create: "Create",
+        promo_result_label: "Done! Promo code:",
+        promo_create_error: "⚠️ Could not create promo code."
     }
 };
 const TARIFF_LABEL_EN = { "1m": "1 month", "3m": "3 months", "6m": "6 months" };
@@ -514,20 +596,24 @@ function showScreen(name) {
 }
 
 // ============================================================
-// Навигация между страницами (магазин / профиль)
+// Навигация между страницами (магазин / профиль / промокод)
 // ============================================================
 const pages = {
     store: document.getElementById("page-store"),
-    profile: document.getElementById("page-profile")
+    profile: document.getElementById("page-profile"),
+    promo: document.getElementById("page-promo"),
+    "promo-admin": document.getElementById("page-promo-admin")
 };
 function switchPage(name) {
     Object.entries(pages).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
     document.getElementById("navStore").classList.toggle("active", name === "store");
     document.getElementById("navProfile").classList.toggle("active", name === "profile");
+    document.getElementById("navPromo").classList.toggle("active", name === "promo");
     if (name === "profile") loadProfile();
 }
 document.getElementById("navStore").addEventListener("click", () => switchPage("store"));
 document.getElementById("navProfile").addEventListener("click", () => switchPage("profile"));
+document.getElementById("navPromo").addEventListener("click", () => switchPage("promo"));
 document.getElementById("goBuyBtn").addEventListener("click", () => {
     switchPage("store");
     showScreen("tariffs");
@@ -535,6 +621,57 @@ document.getElementById("goBuyBtn").addEventListener("click", () => {
 document.getElementById("extendBtn").addEventListener("click", () => {
     switchPage("store");
     showScreen("tariffs");
+});
+
+// --- Активировать промокод (доступно всем) ---
+document.getElementById("promoRedeemBtn").addEventListener("click", async () => {
+    const code = document.getElementById("promoInput").value.trim();
+    if (!code) return;
+    document.getElementById("promoStatus").textContent = t("promo_checking");
+    try {
+        const res = await fetch("/api/promo/redeem", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, code })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            document.getElementById("promoStatus").textContent = t("promo_success", data.days);
+            document.getElementById("promoInput").value = "";
+            tg?.HapticFeedback?.notificationOccurred?.("success");
+            loadProfile();
+        } else {
+            const map = { not_found: "promo_not_found", already_used: "promo_already_used", exhausted: "promo_exhausted" };
+            document.getElementById("promoStatus").textContent = t(map[data.error] || "promo_error");
+        }
+    } catch (err) {
+        document.getElementById("promoStatus").textContent = t("promo_error");
+    }
+});
+
+// --- Создать промокод (только админ, экран открывается по ссылке из бота) ---
+document.getElementById("promoCreateBtn").addEventListener("click", async () => {
+    const days = Number(document.getElementById("promoDaysInput").value);
+    const maxUses = Number(document.getElementById("promoUsesInput").value) || 1;
+    if (!days || days <= 0) return;
+    document.getElementById("promoAdminStatus").textContent = t("promo_checking");
+    try {
+        const res = await fetch("/api/promo/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, days, maxUses })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            document.getElementById("promoAdminStatus").textContent = "";
+            document.getElementById("promoResult").classList.remove("hidden");
+            document.getElementById("promoResultCode").textContent = data.code;
+        } else {
+            document.getElementById("promoAdminStatus").textContent = t("promo_create_error");
+        }
+    } catch (err) {
+        document.getElementById("promoAdminStatus").textContent = t("promo_create_error");
+    }
 });
 
 async function loadTariffs() {
@@ -779,10 +916,24 @@ applyLanguage();
 loadTariffs();
 loadProfile();
 
-// Если открыли по ссылке ?screen=profile (например, из уведомления бота) —
-// сразу показываем профиль.
-if (new URLSearchParams(window.location.search).get("screen") === "profile") {
+// Если открыли по ссылке ?screen=profile (из уведомления бота) — сразу профиль.
+// ?screen=promo-admin (из кнопки "Создать промокод" в /admin) — экран создания,
+// но только если человек реально админ (проверяем через /api/status).
+const requestedScreen = new URLSearchParams(window.location.search).get("screen");
+if (requestedScreen === "profile") {
     switchPage("profile");
+} else if (requestedScreen === "promo-admin") {
+    fetch("/api/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.isAdmin) switchPage("promo-admin");
+            else switchPage("store");
+        })
+        .catch(() => switchPage("store"));
 } else {
     switchPage("store");
 }
