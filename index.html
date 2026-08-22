@@ -30,6 +30,35 @@
         --bg-grad: radial-gradient(circle at 50% 0%, #ffffff 0%, #eef1f8 60%, #e4e9f5 100%);
     }
     * { box-sizing: border-box; }
+
+    /* Плавные анимации по умолчанию на интерактивных элементах */
+    .tariff, .method-btn, .btn, .switch-slider, .switch-slider::before,
+    .toggle-group button, .settings-row, .status-badge, .manage-box {
+        transition: background .2s ease, border-color .2s ease, color .2s ease,
+                    transform .15s ease, box-shadow .2s ease;
+    }
+    .tariff:active, .method-btn:active, .btn:active { transform: scale(0.98); }
+
+    /* Мягкое появление при переключении экранов/вкладок */
+    #screen-tariffs, #screen-methods, #screen-pay, #screen-success,
+    #page-store, #page-profile, #page-promo, #page-promo-admin {
+        animation: fadeInUp .28s ease both;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Защита картинок от перетаскивания/сохранения — не 100% гарантия
+       (в браузере полностью запретить нельзя), но убирает стандартные
+       способы: drag, долгое нажатие на телефоне, контекстное меню. */
+    img {
+        -webkit-user-drag: none;
+        user-drag: none;
+        -webkit-touch-callout: none;
+        user-select: none;
+        pointer-events: none;
+    }
     html, body {
         margin: 0;
         padding: 0;
@@ -173,6 +202,7 @@
         font-size: 13px; font-weight: 700;
     }
     .status-badge.active { background: rgba(31,174,92,.15); color: var(--success); }
+    .status-badge .badge-star { width: 16px; height: 16px; object-fit: contain; vertical-align: -3px; margin-right: 2px; }
     .status-badge.inactive { background: rgba(224,67,63,.12); color: var(--danger); }
 
     .manage-card { margin-top: 4px; }
@@ -225,19 +255,29 @@
         background: var(--bg-card);
         border-top: 1px solid var(--border);
         display: flex;
-        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+        padding: 8px 6px max(8px, env(safe-area-inset-bottom));
         max-width: 480px;
         margin: 0 auto;
+        gap: 4px;
     }
     .bottom-nav button {
         flex: 1; background: none; border: none; cursor: pointer;
-        display: flex; flex-direction: column; align-items: center; gap: 2px;
-        color: var(--text-dim); font-size: 11px; font-weight: 600; padding: 6px 0;
+        display: flex; flex-direction: column; align-items: center; gap: 3px;
+        color: var(--text-dim); font-size: 11px; font-weight: 600; padding: 8px 0;
+        border-radius: 12px;
+        transition: color .2s ease, background .25s ease, box-shadow .25s ease, transform .15s ease;
     }
-    .bottom-nav button .ic { font-size: 20px; }
-    .bottom-nav button.active { color: var(--primary); }
-    .bottom-nav button .nav-img { display: flex; align-items: center; justify-content: center; }
+    .bottom-nav button:active { transform: scale(0.94); }
+    .bottom-nav button .ic { font-size: 20px; transition: transform .25s ease; }
+    .bottom-nav button.active {
+        color: var(--primary);
+        background: rgba(47, 107, 255, 0.12);
+        box-shadow: 0 0 0 1px rgba(47, 107, 255, 0.35), 0 0 14px rgba(47, 107, 255, 0.35);
+    }
+    .bottom-nav button.active .ic { transform: scale(1.08); }
+    .bottom-nav button .nav-img { display: flex; align-items: center; justify-content: center; transition: transform .25s ease; }
     .bottom-nav button .nav-img img { width: 22px; height: 22px; object-fit: contain; border-radius: 6px; }
+    .bottom-nav button.active .nav-img { transform: scale(1.08); filter: drop-shadow(0 0 6px rgba(47, 107, 255, 0.6)); }
 
     .promo-input {
         width: 100%;
@@ -399,6 +439,23 @@
 
 <script>
 const tg = window.Telegram?.WebApp;
+
+// Доп. защита картинок: блокируем контекстное меню (правая кнопка / долгое
+// нажатие) конкретно на <img>, и на всякий случай — draggable=false на все
+// картинки, включая те, что появятся позже (тарифы/способы оплаты рендерятся
+// динамически). Полностью "вытащить ссылку" через инструменты разработчика
+// или просмотр исходного кода это не помешает — так работает любой браузер.
+document.addEventListener("contextmenu", (e) => {
+    if (e.target.tagName === "IMG") e.preventDefault();
+});
+document.addEventListener("dragstart", (e) => {
+    if (e.target.tagName === "IMG") e.preventDefault();
+});
+new MutationObserver(() => {
+    document.querySelectorAll("img:not([draggable])").forEach((img) => {
+        img.draggable = false;
+    });
+}).observe(document.body, { childList: true, subtree: true });
 if (tg) { tg.ready(); tg.expand(); }
 const initData = tg?.initData || "";
 const tgUser = tg?.initDataUnsafe?.user || null;
@@ -408,7 +465,7 @@ const tgUser = tg?.initDataUnsafe?.user || null;
 // ============================================================
 const I18N = {
     ru: {
-        title: "Premium",
+        title: "Premium — Скрыть себя",
         desc: "Владельцы бизнес-ботов не увидят твоё имя, юзернейм и содержимое сообщений — вместо этого им придёт уведомление, что у собеседника подключен Premium.",
         choose_term: "Выбери срок",
         payment_method: "Способ оплаты",
@@ -878,7 +935,7 @@ function renderProfile() {
     if (hasSubscription) {
         const untilStr = untilDate.toLocaleDateString(LANG === "en" ? "en-US" : "ru-RU");
         badge.className = "status-badge active";
-        badge.textContent = `👑 ${t("premium_active")} ${t("until")} ${untilStr}`;
+        badge.innerHTML = `<img class="badge-star" src="https://api.wizard-bot.com/docs/assets/star-Cg9w1peQ.png" alt="" /> ${t("premium_active")} ${t("until")} ${untilStr}`;
 
         manageCard.classList.remove("hidden");
         const daysLeft = Math.max(0, Math.ceil((untilDate - Date.now()) / (24 * 60 * 60 * 1000)));
