@@ -178,6 +178,30 @@
     .success-screen h2 { font-size: 20px; margin: 0 0 8px; color: var(--success); }
     .success-screen p { color: var(--text-dim); font-size: 14px; }
 
+    /* --- Экран "забанен" --- */
+    .banned-screen { display: flex; align-items: center; justify-content: center; min-height: 70vh; }
+    .banned-box {
+        text-align: center;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 32px 24px;
+        max-width: 320px;
+    }
+    .banned-text { font-size: 16px; line-height: 1.5; color: var(--text); margin: 0 0 16px; }
+    .banned-heart { width: 56px; height: 56px; object-fit: contain; margin: 0 0 20px; }
+    .banned-support {
+        display: inline-block;
+        color: var(--primary);
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid var(--primary);
+        border-radius: 999px;
+        padding: 10px 18px;
+        transition: background .2s ease;
+    }
+    .banned-support:active { background: rgba(47,107,255,.15); }
+
     /* --- Профиль --- */
     .profile-card {
         background: var(--bg-card);
@@ -427,6 +451,13 @@
             <div class="manage-days-label" data-i18n="promo_result_label"></div>
             <div class="manage-days" id="promoResultCode" style="font-size:26px;"></div>
         </div>
+    <!-- ===================== ЭКРАН: ЗАБАНЕН ===================== -->
+    <div id="page-banned" class="hidden banned-screen">
+        <div class="banned-box">
+            <p class="banned-text" data-i18n="banned_text"></p>
+            <img class="banned-heart" src="data:image/png;base64,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" alt="" />
+            <a class="banned-support" href="https://t.me/texsupportdenis" target="_blank" rel="noopener">@texsupportdenis</a>
+        </div>
     </div>
 
 </div>
@@ -518,7 +549,8 @@ const I18N = {
         promo_uses_hint: "Сколько раз можно активировать",
         promo_create: "Создать",
         promo_result_label: "Готово! Промокод:",
-        promo_create_error: "⚠️ Не удалось создать промокод."
+        promo_create_error: "⚠️ Не удалось создать промокод.",
+        banned_text: "Вы были заблокированы администратором, пожалуйста, напиши в тех.поддержку."
     },
     en: {
         title: "Premium — Hide Yourself",
@@ -574,7 +606,8 @@ const I18N = {
         promo_uses_hint: "How many times it can be used",
         promo_create: "Create",
         promo_result_label: "Done! Promo code:",
-        promo_create_error: "⚠️ Could not create promo code."
+        promo_create_error: "⚠️ Could not create promo code.",
+        banned_text: "You have been blocked by the administrator, please contact support."
     }
 };
 const TARIFF_LABEL_EN = { "1m": "1 month", "3m": "3 months", "6m": "6 months" };
@@ -670,13 +703,15 @@ const pages = {
     store: document.getElementById("page-store"),
     profile: document.getElementById("page-profile"),
     promo: document.getElementById("page-promo"),
-    "promo-admin": document.getElementById("page-promo-admin")
+    "promo-admin": document.getElementById("page-promo-admin"),
+    banned: document.getElementById("page-banned")
 };
 function switchPage(name) {
     Object.entries(pages).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
     document.getElementById("navStore").classList.toggle("active", name === "store");
     document.getElementById("navProfile").classList.toggle("active", name === "profile");
     document.getElementById("navPromo").classList.toggle("active", name === "promo");
+    document.querySelector(".bottom-nav").classList.toggle("hidden", name === "banned");
     if (name === "profile") loadProfile();
 }
 document.getElementById("navStore").addEventListener("click", () => switchPage("store"));
@@ -981,30 +1016,42 @@ async function loadProfile() {
 // ============================================================
 applyTheme();
 applyLanguage();
-loadTariffs();
-loadProfile();
 
-// Если открыли по ссылке ?screen=profile (из уведомления бота) — сразу профиль.
-// ?screen=promo-admin (из кнопки "Создать промокод" в /admin) — экран создания,
-// но только если человек реально админ (проверяем через /api/status).
-const requestedScreen = new URLSearchParams(window.location.search).get("screen");
-if (requestedScreen === "profile") {
-    switchPage("profile");
-} else if (requestedScreen === "promo-admin") {
-    fetch("/api/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData })
-    })
-        .then(r => r.json())
-        .then(data => {
+// Сначала проверяем, не забанен ли человек — если да, показываем только
+// экран блокировки и больше ничего не грузим/не подключаем.
+fetch("/api/status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ initData })
+})
+    .then(r => r.json())
+    .then(data => {
+        if (data.isBanned) {
+            switchPage("banned");
+            return;
+        }
+
+        profileStatus = data;
+        renderProfile();
+        loadTariffs();
+
+        // Если открыли по ссылке ?screen=profile (из уведомления бота) — сразу профиль.
+        // ?screen=promo-admin (из кнопки "Создать промокод" в /admin) — экран создания,
+        // но только если человек реально админ.
+        const requestedScreen = new URLSearchParams(window.location.search).get("screen");
+        if (requestedScreen === "profile") {
+            switchPage("profile");
+        } else if (requestedScreen === "promo-admin") {
             if (data.isAdmin) switchPage("promo-admin");
             else switchPage("store");
-        })
-        .catch(() => switchPage("store"));
-} else {
-    switchPage("store");
-}
+        } else {
+            switchPage("store");
+        }
+    })
+    .catch(() => {
+        loadTariffs();
+        switchPage("store");
+    });
 </script>
 </body>
 </html>

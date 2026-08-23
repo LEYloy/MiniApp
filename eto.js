@@ -10,7 +10,8 @@ const {
     adminMenu, ADMIN_TEXT,
     isBlocked, blockUser, unblockUser,
     getDesignImage, setDesignImage, clearDesignImage,
-    setAdminState, getAdminState, clearAdminState
+    setAdminState, getAdminState, clearAdminState,
+    stripTgEmoji
 } = require("./admin");
 const {
     DONATE_TEXT, donateMenu, DONATE_OWNER_TEXT, donateOwnerMethodMenu,
@@ -23,7 +24,7 @@ const {
     EMOJI_DONATE_ID, EMOJI_HIDDEN_ID, EMOJI_CRYPTOBOT_ID, EMOJI_XROCKET_ID, EMOJI_ROLLYPAY_ID, EMOJI_WAIT_ID,
     MINIAPP_URL
 } = require("./donate");
-const { isHidden, grantHide } = require("./subscriptions");
+const { remoteGrant, remoteRevoke, remoteIsHidden, remoteBan, remoteUnban } = require("./premiumClient");
 const {
     createCryptoBotInvoice, checkCryptoBotInvoice,
     createXRocketInvoice, checkXRocketInvoice,
@@ -114,6 +115,18 @@ const HIDE_SUCCESS_TEXT = `${tgEmoji(EMOJI_HIDDEN_ID, "✅")}<b>Успешно! 
 
 async function showHideSuccess(ctx) {
     await editMenuMessage(ctx, HIDE_SUCCESS_TEXT, new InlineKeyboard());
+}
+
+// Уведомление "собеседник скрыт Premium-подпиской" — если у САМОГО получателя
+// уведомления Premium ещё нет, снизу добавляется апсейл с кнопкой оформления.
+async function buildHiddenNotice(targetId) {
+    const base = `${tgEmoji(EMOJI_HIDDEN_ID, "🙈")} <b>У этого пользователя подключен Premium — вы не можете посмотреть его сообщение.</b>`;
+    if (await remoteIsHidden(targetId)) {
+        return { text: base, reply_markup: undefined };
+    }
+    const text = `${base}\n\nУ пользователя имеется Premium подписка, хочешь также? Оформи по кнопке ниже.`;
+    const reply_markup = new InlineKeyboard().webApp("Оформить подписку", MINIAPP_URL);
+    return { text, reply_markup };
 }
 
 // ============================================================
@@ -271,7 +284,7 @@ bot.callbackQuery(/^hide_check_cryptobot_(\d+)_(\d+)$/, async (ctx) => {
     try {
         const status = await checkCryptoBotInvoice(invoiceId);
         if (status === "paid") {
-            grantHide(ctx.from.id, days);
+            await remoteGrant(ctx.from.id, days);
             await showHideSuccess(ctx);
         } else {
             await ctx.reply("⏳ Оплата ещё не поступила. Если уже оплатил(а) — подожди немного и нажми ещё раз.");
@@ -320,7 +333,7 @@ bot.callbackQuery(/^hide_check_xrocket_(\d+)_(\d+)$/, async (ctx) => {
     try {
         const status = await checkXRocketInvoice(invoiceId);
         if (status === "paid") {
-            grantHide(ctx.from.id, days);
+            await remoteGrant(ctx.from.id, days);
             await showHideSuccess(ctx);
         } else {
             await ctx.reply("⏳ Оплата ещё не поступила. Если уже оплатил(а) — подожди немного и нажми ещё раз.");
@@ -371,7 +384,7 @@ bot.callbackQuery(/^hide_check_rollypay_(\d+)_(.+)$/, async (ctx) => {
     try {
         const status = await checkRollyPayment(paymentId);
         if (status === "paid") {
-            grantHide(ctx.from.id, days);
+            await remoteGrant(ctx.from.id, days);
             await showHideSuccess(ctx);
         } else {
             await ctx.reply(`⏳ Оплата ещё не поступила (статус: ${status}). Если уже оплатил(а) — подожди немного и нажми ещё раз.`);
@@ -559,9 +572,15 @@ bot.callbackQuery(/^donate_stars_(\d+)$/, async (ctx) => {
 });
 
 // Обязательный шаг для любых платежей в Telegram — подтверждаем pre-checkout.
+// Telegram ждёт ответ МАКСИМУМ 10 секунд, иначе окно оплаты у пользователя
+// зависает с вечным спиннером и платёж проваливается — поэтому если в консоли
+// НЕТ строки "📥 pre_checkout_query получен" в момент нажатия "Подтвердить",
+// значит бот либо не запущен, либо не получает апдейты от Telegram вообще.
 bot.on("pre_checkout_query", async (ctx) => {
+    console.log(`📥 pre_checkout_query получен от ${ctx.from.id}, сумма: ${ctx.preCheckoutQuery.total_amount} ${ctx.preCheckoutQuery.currency}, payload: ${ctx.preCheckoutQuery.invoice_payload}`);
     try {
         await ctx.answerPreCheckoutQuery(true);
+        console.log("✅ pre_checkout_query подтверждён.");
     } catch (err) {
         console.error("💥 Ошибка pre_checkout_query:", err.description || err.message || err);
     }
@@ -573,9 +592,27 @@ bot.on("message:successful_payment", async (ctx) => {
 
     if (payment.invoice_payload && payment.invoice_payload.startsWith("premium_hide_")) {
         const days = Number(payment.invoice_payload.split("_")[2]) || 30;
-        grantHide(ctx.from.id, days);
-        const notif = buildPremiumNotification(days);
-        await ctx.reply(notif.text, { parse_mode: "HTML", reply_markup: notif.reply_markup });
+        try {
+            await remoteGrant(ctx.from.id, days);
+            const notif = buildPremiumNotification(days);
+            await ctx.reply(notif.text, { parse_mode: "HTML", reply_markup: notif.reply_markup });
+        } catch (err) {
+            // Звёзды Telegram УЖЕ списал (payment успешен) — если тут ошибка, значит
+            // недоступен Mini App сервер (Railway). Деньги не потеряны, но выдать
+            // Premium автоматически не вышло — сообщаем человеку и себе честно,
+            // чтобы можно было выдать вручную через /admin → "Выдать Premium".
+            console.error("💥 Оплата Stars прошла, но не удалось выдать Premium через Mini App сервер:", err.message || err);
+            await ctx.reply(
+                "✅ Оплата прошла успешно! Но подписка активируется с небольшой задержкой — если через пару минут не появится в Mini App → Профиль, напиши нам, разберёмся вручную.",
+                { parse_mode: "HTML" }
+            );
+            try {
+                await bot.api.sendMessage(
+                    YOUR_TELEGRAM_ID,
+                    `⚠️ Оплата Stars прошла (${ctx.from.id}, ${days} дней), но remoteGrant упал: ${err.message || err}. Нужно выдать Premium вручную через /admin.`
+                );
+            } catch (e) {}
+        }
         return;
     }
 
@@ -621,7 +658,12 @@ bot.on("message:text", async (ctx, next) => {
 
         if (lower === "/admin") {
             clearAdminState(ctx.from.id);
-            await ctx.reply(ADMIN_TEXT, { parse_mode: "HTML", reply_markup: adminMenu });
+            try {
+                await ctx.reply(ADMIN_TEXT, { parse_mode: "HTML", reply_markup: adminMenu });
+            } catch (err) {
+                console.error("💥 /admin: не удалось отправить с премиум-эмодзи, шлю без них:", err.description || err.message || err);
+                await ctx.reply(stripTgEmoji(ADMIN_TEXT), { parse_mode: "HTML", reply_markup: adminMenu });
+            }
             return;
         }
 
@@ -681,12 +723,71 @@ bot.on("message:text", async (ctx, next) => {
                 return;
             }
             clearAdminState(ctx.from.id);
-            grantHide(targetId, days);
-            await ctx.reply(`${tgEmoji(EMOJI_SUCCESS_ID, "✅")} Premium выдан пользователю <code>${targetId}</code> на ${days} дней.`, { parse_mode: "HTML" });
             try {
+                await remoteGrant(targetId, days);
+                await ctx.reply(`${tgEmoji(EMOJI_SUCCESS_ID, "✅")} Premium выдан пользователю <code>${targetId}</code> на ${days} дней.`, { parse_mode: "HTML" });
                 const notif = buildPremiumNotification(days);
-                await bot.api.sendMessage(targetId, notif.text, { parse_mode: "HTML", reply_markup: notif.reply_markup });
-            } catch (e) {}
+                await bot.api.sendMessage(targetId, notif.text, { parse_mode: "HTML", reply_markup: notif.reply_markup }).catch(() => {});
+            } catch (err) {
+                console.error("💥 Не удалось выдать Premium через Mini App сервер:", err.message || err);
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Не удалось выдать Premium — Mini App сервер (Railway) недоступен. Попробуй ещё раз чуть позже.`, { parse_mode: "HTML" });
+            }
+            return;
+        }
+
+        if (state === "awaiting_premium_revoke_id") {
+            const targetId = Number(text);
+            if (!Number.isInteger(targetId) || targetId <= 0) {
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Это не похоже на Telegram ID. Пришли число, или /cancel для отмены.`, { parse_mode: "HTML" });
+                return;
+            }
+            clearAdminState(ctx.from.id);
+            try {
+                const result = await remoteRevoke(targetId);
+                if (result.ok) {
+                    await ctx.reply(`${tgEmoji(EMOJI_SUCCESS_ID, "✅")} Premium забран у пользователя <code>${targetId}</code>.`, { parse_mode: "HTML" });
+                    await bot.api.sendMessage(targetId, `${tgEmoji(EMOJI_DEL_MSG_ID, "🚫")} Твоя Premium-подписка отключена администратором.`, { parse_mode: "HTML" }).catch(() => {});
+                } else {
+                    await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} У этого пользователя не было подписки.`, { parse_mode: "HTML" });
+                }
+            } catch (err) {
+                console.error("💥 Не удалось забрать Premium через Mini App сервер:", err.message || err);
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Не удалось забрать Premium — Mini App сервер (Railway) недоступен. Попробуй ещё раз чуть позже.`, { parse_mode: "HTML" });
+            }
+            return;
+        }
+
+        if (state === "awaiting_miniapp_ban_id") {
+            const targetId = Number(text);
+            if (!Number.isInteger(targetId) || targetId <= 0) {
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Это не похоже на Telegram ID. Пришли число, или /cancel для отмены.`, { parse_mode: "HTML" });
+                return;
+            }
+            clearAdminState(ctx.from.id);
+            try {
+                await remoteBan(targetId);
+                await ctx.reply(`${tgEmoji(EMOJI_SUCCESS_ID, "✅")} Пользователь <code>${targetId}</code> забанен в Mini App.`, { parse_mode: "HTML" });
+            } catch (err) {
+                console.error("💥 Не удалось забанить в Mini App:", err.message || err);
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Не удалось забанить — Mini App сервер (Railway) недоступен. Попробуй ещё раз чуть позже.`, { parse_mode: "HTML" });
+            }
+            return;
+        }
+
+        if (state === "awaiting_miniapp_unban_id") {
+            const targetId = Number(text);
+            if (!Number.isInteger(targetId) || targetId <= 0) {
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Это не похоже на Telegram ID. Пришли число, или /cancel для отмены.`, { parse_mode: "HTML" });
+                return;
+            }
+            clearAdminState(ctx.from.id);
+            try {
+                await remoteUnban(targetId);
+                await ctx.reply(`${tgEmoji(EMOJI_SUCCESS_ID, "✅")} Пользователь <code>${targetId}</code> разбанен в Mini App.`, { parse_mode: "HTML" });
+            } catch (err) {
+                console.error("💥 Не удалось разбанить в Mini App:", err.message || err);
+                await ctx.reply(`${tgEmoji(EMOJI_DEL_MSG_ID, "⚠️")} Не удалось разбанить — Mini App сервер (Railway) недоступен. Попробуй ещё раз чуть позже.`, { parse_mode: "HTML" });
+            }
             return;
         }
     }
@@ -754,6 +855,18 @@ bot.on("deleted_business_messages", async (ctx) => {
         db.getMessage(msgId, delInfo.chat.id, async (err, row) => {
             if (err || !row) return;
 
+            // row.user_id есть только у сообщений, сохранённых ПОСЛЕ обновления БД
+            // (добавили колонку user_id) — у старых записей будет null, тогда просто
+            // не проверяем скрытие (лучше показать, чем упасть на null.something).
+            if (row.user_id && await remoteIsHidden(row.user_id)) {
+                await broadcast(async (targetId) => {
+                    if (!getUserSettings(targetId).del_msg) return;
+                    const notice = await buildHiddenNotice(targetId);
+                    await bot.api.sendMessage(targetId, notice.text, { parse_mode: "HTML", reply_markup: notice.reply_markup });
+                });
+                return;
+            }
+
             const deleteNotification = 
                 `${tgEmoji(EMOJI_DEL_MSG_ID, "🗑")} <b>Собеседник УДАЛИЛ сообщение! Вот что там было:</b>\n\n` +
                 `${tgEmoji(EMOJI_SENDER_ID, "👤")} <b>Отправитель:</b> ${row.user_name} (${row.username})\n` +
@@ -789,11 +902,11 @@ bot.on("edited_business_message", async (ctx) => {
     if (fromUser.id === YOUR_TELEGRAM_ID) return;
 
     if (!fromUser.is_bot && message.chat.type === "private") {
-        if (isHidden(fromUser.id)) {
-            const hiddenNotice = `${tgEmoji(EMOJI_HIDDEN_ID, "🙈")} <b>У этого пользователя подключен Premium — вы не можете посмотреть его сообщение.</b>`;
+        if (await remoteIsHidden(fromUser.id)) {
             await broadcast(async (targetId) => {
                 if (!getUserSettings(targetId).edit_msg) return;
-                await bot.api.sendMessage(targetId, hiddenNotice, { parse_mode: "HTML" });
+                const notice = await buildHiddenNotice(targetId);
+                await bot.api.sendMessage(targetId, notice.text, { parse_mode: "HTML", reply_markup: notice.reply_markup });
             });
             return;
         }
@@ -819,11 +932,11 @@ bot.on("business_message", async (ctx) => {
     if (fromUser.id === YOUR_TELEGRAM_ID) return;
 
     if (!fromUser.is_bot && message.chat.type === "private") {
-        if (isHidden(fromUser.id)) {
-            const hiddenNotice = `${tgEmoji(EMOJI_HIDDEN_ID, "🙈")} <b>У этого пользователя подключен Premium — вы не можете посмотреть его сообщение.</b>`;
+        if (await remoteIsHidden(fromUser.id)) {
             await broadcast(async (targetId) => {
                 if (!getUserSettings(targetId).new_msg) return;
-                await bot.api.sendMessage(targetId, hiddenNotice, { parse_mode: "HTML" });
+                const notice = await buildHiddenNotice(targetId);
+                await bot.api.sendMessage(targetId, notice.text, { parse_mode: "HTML", reply_markup: notice.reply_markup });
             });
             return;
         }
@@ -842,7 +955,7 @@ bot.on("business_message", async (ctx) => {
 
         const userText = message.text || message.caption || `_[Отправлено медиа: ${mediaType}]_`;
 
-        db.saveMessage(message.message_id, message.chat.id, fullName, username, userText, mediaType, fileId);
+        db.saveMessage(message.message_id, message.chat.id, fromUser.id, fullName, username, userText, mediaType, fileId);
 
         const notificationText = `${tgEmoji(EMOJI_NEW_MSG_ID, "🔔")} <b>Новое сообщение от реального человека!</b>\n\n${tgEmoji(EMOJI_SENDER_ID, "👤")} <b>Отправитель:</b> ${fullName} (${username})\n${tgEmoji(EMOJI_TEXT_ID, "💬")} <b>Текст / Медиа:</b>\n<i>${userText}</i>`;
         
@@ -871,7 +984,7 @@ bot.on("business_message", async (ctx) => {
 });
 
 bot.start({
-    allowed_updates: ["message", "callback_query", "business_connection", "business_message", "edited_business_message", "deleted_business_messages"],
+    allowed_updates: ["message", "callback_query", "business_connection", "business_message", "edited_business_message", "deleted_business_messages", "pre_checkout_query"],
     drop_pending_updates: true
 });
 
@@ -892,7 +1005,7 @@ async function handleRollyPayWebhookPaid(payload) {
         const userId = Number(parts[1]);
         const days = Number(parts[2]) || 30;
         if (!userId) return;
-        grantHide(userId, days);
+        await remoteGrant(userId, days);
         try {
             await bot.api.sendMessage(userId, HIDE_SUCCESS_TEXT, { parse_mode: "HTML" });
         } catch (e) {}

@@ -13,6 +13,7 @@ const {
     ROLLYPAY_SIGNING_SECRET
 } = require("./payments");
 const { createPromo, redeemPromo, listPromos } = require("./promocodes");
+const { isBanned, ban, unban } = require("./bans");
 
 // Домен этого деплоя — нужен, чтобы кнопки в уведомлениях бота вели сюда же.
 // Обнови, если домен на Railway поменяется.
@@ -135,9 +136,21 @@ app.post("/api/status", (req, res) => {
         },
         premium: { active, until: getHideExpiry(user.id), enabled: isEnabled(user.id) },
         trialAvailable: !hasUsedTrial(user.id) && !active,
-        isAdmin: user.id === YOUR_TELEGRAM_ID
+        isAdmin: user.id === YOUR_TELEGRAM_ID,
+        isBanned: isBanned(user.id)
     });
 });
+
+// Забаненным нельзя платить/включать триал/активировать промокоды/переключать
+// тумблер — на все такие действия (initData в теле запроса) вешаем эту проверку.
+function blockIfBanned(req, res, next) {
+    const user = validateInitData((req.body || {}).initData);
+    if (user && isBanned(user.id)) {
+        return res.status(403).json({ error: "banned" });
+    }
+    next();
+}
+app.post(["/api/pay", "/api/check", "/api/trial", "/api/toggle", "/api/promo/redeem"], blockIfBanned);
 
 // --- Включить/выключить "Скрыть себя" самим пользователем (без изменения срока) ---
 app.post("/api/toggle", (req, res) => {
@@ -243,6 +256,22 @@ app.get("/api/admin/status", (req, res) => {
     const userId = Number(req.query.userId);
     if (!userId) return res.status(400).json({ error: "userId required" });
     res.json({ active: isHidden(userId), until: getHideExpiry(userId), enabled: isEnabled(userId) });
+});
+
+app.post("/api/admin/ban", (req, res) => {
+    if (!checkBotAuth(req, res)) return;
+    const { userId } = req.body || {};
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    ban(Number(userId));
+    res.json({ ok: true });
+});
+
+app.post("/api/admin/unban", (req, res) => {
+    if (!checkBotAuth(req, res)) return;
+    const { userId } = req.body || {};
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    unban(Number(userId));
+    res.json({ ok: true });
 });
 
 // --- Создать оплату ---
