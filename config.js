@@ -3,6 +3,6 @@
 // чтобы токен и ID владельца жили в одном месте, а не дублировались.
 // ============================================================
 module.exports = {
-    BOT_TOKEN: "8626680065:AAHIKECqxfSoEJUyXT-XKcX1c0d3RguH9aY",
+    BOT_TOKEN: "8101453845:AAEJK1aN9X2VkyvuNyyg646V52JGQyUC4d0",
     YOUR_TELEGRAM_ID: 1423594433
 };
