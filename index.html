@@ -453,10 +453,21 @@
         </div>
     </div>
 
+    <!-- ===================== ЭКРАН: АМНИСТИЯ (разбан) ===================== -->
+    <div id="page-amnesty" class="hidden banned-screen">
+        <div class="banned-box">
+            <p class="banned-text">
+                <img class="banned-heart" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAJ9ElEQVR42u1bb2xbVxU/59z37NhuWNPsQ7u1SRvb9TBobbDYujHkjAStYqNSxYxa/vfDECAQMCG+odIJwTQJJAYMCRACQaEobOuHfuhQWWYBg8GifIiwltgpa7ot/ZssSdvE7717Dh9yX3ip0sR/02j0SE+xI/vee/7e3/nda4BbcktuyU0Qlc1mLQBQgdf0/6A4mueGhrkZC1rLuQQAIB6PP0REH0XEHSIyh4ivep737OnTp4vBz72TDEAAIFu3bm2LRqO/QMT9iAgiC3oiIjDzNQB4anR09AnzeV4LQ6xF3mEul0MAgEgk8hwR7ddae57necystXkjIlGl1LcTicRPAUBns9k1SYemT5LJZOxTp055iUTiacuyPu55noOINiISABAiknktWmvPsqx7brvttjeHhoZeTafToYsXL/J6TgGVzWYXx8jn84sh6/8/n897yWTyYaXUCa21BwDWCuMJAGhERBF5sFgs/sWska6bx08PymazmM/nda3pgnWkTkWeSaVS+0Tk5yLS7iuzylcYEREALorIV23bfq5QKDiNXFO9BlicKJVK9TDzB0SkBQAuEdEZEbkiIhEASCDiI0T0IREBWah4lc4nuCDAzKMA8C8RmUBET0TaEbEDAFoB4DIA/ImIfj0yMjJbixGwFuW7urrea1nWM4j4wQVnmVXL/6LQr/LMLDXOJcYQhIiw0jzMPKK1/uTY2NhgtUbAapWPx+PvIaI8EbVrrZfkngldXFijiHlfb6FlEVmiEAasISKslLKZ+RIRvX9kZOSMWQNXqlQ1YiHir4zyLiIqRLT8xyhLAKAC7+veqoNzBMZVZh5ba+0qpW5n5qeMQ7DREaAAQO/cubMXEU9prTUirjlsXSVdAADKAJAoFotvVpoKFUWAvwUx8wOIKGsJVauB2UTUgoh3VePcalMgtMb9Q3VhIAKmLjUHChPRW+u40yQRYUS8cF1a1G8AH+GJyH9EZEkVXi/ON0uatSzrfMMNEAgx9ya00dWIvnbtGjc8BXK5nG+AaDXWvQk1ILxhw4Zwww1w4cIFH+CkDcJbKwMIAFTS6KCIMBHFPM9LGL2oUQbAfD4PZpvJMTOY9rXZwiKCAKDMX1nF+0xEoLU+BACcTqdVIwyAhpjwksnkl4mom5m52USKiGhEpGg0OhWLxV5paWnRq1FliGhprVkp9elEIrGnUCg4mUzGrscABABi+vnvIeKPmFk3ewcQEU8ppWKx2Et9fX27hoeH99x77733h8PhSybzVksHGxGfjcfjPYODg+5qcFythKzS6fSmtra2o0qpx4znVTN3AKO8FY1GX9q3b9/DTz755GURCQ0NDY3v3Lnzrrm5ufeJiF7BcWi2xHcR0Wfb29svXb58+RWzbqk0AhAAMJVKtTqO8yIR7fc8z1uDsF+i/JEjR67lcjnl43nHcbaZCMBKCqKICBH9OJFIPG0KKVVqAAIA1lp/x7KsXYbDs2osYv6GoWtRvr+/HwHA6+npeXxmZqYvEIWVpDZ6nudalvWVZDJ5AADYGHTFbpAAgFOp1B3MPBbA/jWFvW3bgIjgui6Y+qGqVb63t/fxc+fOfb9cLnOAb6gYGBERMnOhWCzuhmWodrqu6yPT9WWJqKVKGmvR8wAgra2t/96xY8eD6XS6e8uWLc/atq2Y2atF+fn5ea8G5QEAFDMTALw7Ho/v8InUJQTHDUJyW61tr4hAKBTCjo6OLxw/fvyvAADhcPjRnp6e34+Pjx9wHMc1DE7FyhNRPcVXEFERUTsAlK4f50aFbbYO5IaICLFY7CIAqL1794bL5TINDAwc7OjoOGbbtq21nldKWZFIpNnK+0VRM/Pl5WA8Xdf1+Y3EP5gZa9jzERHZdV144403vhsKhfTJkyfdXC6HjuPQwMDAwe3bt/8uEom0RCKRF3t7ex9psvKMiCwio1u3bn19Oa5QLeNBmpycnNi0adP9SqkkM7tV0l8kIjw/P5/evXv3XWfPnv3j8PAw5nI5HB4elvHx8ef27NnjWpb1jaNHj842UXkQEVcpZTHz4aGhoX9ms1nrzJkzvBonSAAgqVSqk5lfJqIthgC1qzI9sxcKhayOjo5jAwMDBx3HocOHD8ORI0f4uvlVs5S3LMv2PG+gu7v7w/39/bIcR4grIapkMtkFAL9RSt1vqCZVpRFc27btzs7OJUYoFAqYTqflxIkTanBw0G2w8gIAopQiZn7e87xDp0+fnrlRG7/aZQXd2dnZEg6Hf4iIn2fmRhgBM5mMNTg46AGANEN5IiJmfqJYLB4OOrQWWpz8QROJxM+UUo/VQokzsxsKhext27Yde+GFFz6FiFpE7L6+vq9NTEw8VS6XNRFRA/oMNgernygWi8eMs1a8Z1DJhAQAkEgkNiDiCCJurgUgMbO2bVvFYrHBWCxWmJ2dvWd+fj7lui7XCHKWRZRa62OlUulgJpOx/SirpRtcMnY2m1VDQ0NzbW1td1qWdZ+BtVU1R4hIzMyO49x59erVXeVy+XZe2Gsb4Xkw54cIAF+fnJx8fWJioqLjMapuDvx7PaywUZZFxENEbiCzJABAzDwvIq8ZxSsiRyvq8gwtLgAw3QBWmKAJrbXhKuccx7naTFp83Z4K1eONVcU/GySiLT4BuQ4pcRCRVtu226uJ0mojYNv6OxRaVJaJyFJKbW6aARAxBuv0UMSvA8wcaXgKBCYowvo9FkNeuHh4ppoiiFWEmHR2dm4OhUJFAIjWYsBmE6pa65dLpdIDUMUVmWogrZqenp5tb293LMt6yL8fFMAEEoCdtV6MuiG+X2Zso7t4RGQDgDDzgampqbMBCN9QAwgAqMnJyb9t3LixVSn1gI/ffSGi4M1PNCvUtQIe/7vLje2LUkqJyFWt9WfGxsZOQhNviS1hjpPJ5EcQ8YvM3A0ALYj4toi8hYhzhk2+ExGTpjBV2zuI2XaRmbWIFADgvGF3Npp+ZAMiTiLiAAD8YHR09DW/g612+6gVPzAAwN133x2bnp62t2/ffiWfzy+yvplMxp6ZmekGgG8S0ceqaKXFx90i8oyI/KRUKhWCH0gkEuFIJBINhUJXzPEX1KJ8vTmqArm53K6y+P9kMvlLpdQhz/O8VQ5ZJNDSPlosFp9fZuwldcBQagI1XJOtt4prMykGHg486P8sxnGcL2mtX1ZKWYFbJjeq5kpr/a1isfh8Op0OBdbIgUK4OGd/f7+uVflGVemK0qWrq6tDKTVIRLcbjjHYBouIsG3btuu6fyiVSgcq7efrlbW47CgAoKampt5ua2v7MwDcZ1nWHcFqTkRkPH88Go1+7vz583piYmJNfjGylqiOAIANx3gIAPYzc9zwAiMi8ltDY63I4b2jus9MJmObOhF0CMI7XHCZ3wkS3ISfzK2XNhbhltySW3Kz5L+rRmvLQZpZ3gAAAABJRU5ErkJggg==" alt="" />
+                <span data-i18n="amnesty_text"></span>
+            </p>
+            <button class="btn btn-primary" id="amnestyContinueBtn" data-i18n="amnesty_continue"></button>
+        </div>
+    </div>
+
     <!-- ===================== ЭКРАН: ЗАБАНЕН ===================== -->
     <div id="page-banned" class="hidden banned-screen">
         <div class="banned-box">
-            <p class="banned-text"><span data-i18n="banned_text"></span><img class="banned-heart" src="data:image/png;base64,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" alt="" /></p>
+            <p class="banned-text"><span data-i18n="banned_text"></span><img class="banned-heart" src="data:image/png;base64,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" alt="" /></p>
             <a class="banned-support" href="https://t.me/texsupportdenis" target="_blank" rel="noopener">@texsupportdenis</a>
         </div>
     </div>
@@ -551,7 +562,9 @@ const I18N = {
         promo_create: "Создать",
         promo_result_label: "Готово! Промокод:",
         promo_create_error: "⚠️ Не удалось создать промокод.",
-        banned_text: "Вы были заблокированы администратором, пожалуйста, напиши в тех.поддержку."
+        banned_text: "Вы были заблокированы администратором, пожалуйста, напиши в тех.поддержку.",
+        amnesty_text: "Амнистия одобрена! Вы снова можете пользоваться MiniApp",
+        amnesty_continue: "Продолжить"
     },
     en: {
         title: "Premium — Hide Yourself",
@@ -608,7 +621,9 @@ const I18N = {
         promo_create: "Create",
         promo_result_label: "Done! Promo code:",
         promo_create_error: "⚠️ Could not create promo code.",
-        banned_text: "You have been blocked by the administrator, please contact support."
+        banned_text: "You have been blocked by the administrator, please contact support.",
+        amnesty_text: "Amnesty granted! You can use the Mini App again",
+        amnesty_continue: "Continue"
     }
 };
 const TARIFF_LABEL_EN = { "1m": "1 month", "3m": "3 months", "6m": "6 months" };
@@ -705,16 +720,18 @@ const pages = {
     profile: document.getElementById("page-profile"),
     promo: document.getElementById("page-promo"),
     "promo-admin": document.getElementById("page-promo-admin"),
-    banned: document.getElementById("page-banned")
+    banned: document.getElementById("page-banned"),
+    amnesty: document.getElementById("page-amnesty")
 };
 function switchPage(name) {
     Object.entries(pages).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
     document.getElementById("navStore").classList.toggle("active", name === "store");
     document.getElementById("navProfile").classList.toggle("active", name === "profile");
     document.getElementById("navPromo").classList.toggle("active", name === "promo");
-    document.querySelector(".bottom-nav").classList.toggle("hidden", name === "banned");
+    document.querySelector(".bottom-nav").classList.toggle("hidden", name === "banned" || name === "amnesty");
     if (name === "profile") loadProfile();
 }
+document.getElementById("amnestyContinueBtn")?.addEventListener("click", () => switchPage("store"));
 document.getElementById("navStore").addEventListener("click", () => switchPage("store"));
 document.getElementById("navProfile").addEventListener("click", () => switchPage("profile"));
 document.getElementById("navPromo").addEventListener("click", () => switchPage("promo"));
@@ -1028,7 +1045,18 @@ fetch("/api/status", {
     .then(r => r.json())
     .then(data => {
         if (data.isBanned) {
+            localStorage.setItem("miniapp_was_banned", "1");
             switchPage("banned");
+            return;
+        }
+
+        // Был забанен, а теперь снова доступ есть — показываем амнистию один раз.
+        if (localStorage.getItem("miniapp_was_banned") === "1") {
+            localStorage.removeItem("miniapp_was_banned");
+            profileStatus = data;
+            renderProfile();
+            loadTariffs();
+            switchPage("amnesty");
             return;
         }
 
